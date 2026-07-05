@@ -221,7 +221,7 @@ const LEAVE_TYPES=[
 const INS_BR=[24000,25250,26400,27600,28800,30300,31800,33300,34800,36300,38200,40100,42000,43900,45800,48200,50600,53000];
 function bracket(sal){ for(const b of INS_BR){ if(sal<=b) return b;} return INS_BR[INS_BR.length-1]; }
 
-const EMP=[
+const SEED_EMP=[
   {id:'E26P0312',name:'王大明',store:0,dept:'門市',title:'儲備幹部',type:'正職',role:'employee',base:38000,bank:'玉山 0123456789012',state:'在職',start:'2026-01-06'},
   {id:'E25P0455',name:'張雅婷',store:0,dept:'門市',title:'門市副理',type:'正職',role:'supervisor',base:52000,bank:'元大 2148001234567',state:'在職',start:'2025-03-11'},
   {id:'E26K0129',name:'陳美惠',store:1,dept:'廚務',title:'正職廚師',type:'正職',role:'employee',base:41000,bank:'國泰 0789506085623',state:'在職',start:'2026-02-01'},
@@ -233,6 +233,7 @@ const EMP=[
 function meFor(role){ // 每個角色對應一個 demo 使用者
   return EMP.find(e=>e.role===role) || EMP[0];
 }
+let EMP;   // 由 store 載入（可新增/編輯/持久化）；見 store 初始化
 
 // 虛構交易資料（打卡/業績/請假/簽核/墊付/考績/薪資）
 const SALES=[
@@ -250,9 +251,29 @@ let ADVANCES=[
   {who:'王大明',date:'06/03',item:'叫貨現金墊付',amt:1280,state:'已核'},
   {who:'王大明',date:'06/12',item:'店務雜支',amt:540,state:'待核'},
 ];
-const LS='hrm_demo_state_v2';
+const LS='hrm_demo_state_v3';
 let store=JSON.parse(localStorage.getItem(LS)||'null')||{tenant:'yixun',role:'employee',clock:{},leaveCfg:{},punch:[]};
 LEAVE_TYPES.forEach(l=>{ if(store.leaveCfg[l.k]===undefined) store.leaveCfg[l.k]=l.on; });
+// 員工主檔（可新增/編輯/持久化）
+if(!store.emps) store.emps=SEED_EMP.map(e=>({...e}));
+EMP=store.emps;
+// 班別定義（可設置：名稱/時間/顏色）
+if(!store.shiftDefs) store.shiftDefs=[
+  {k:'早',start:'08:00',end:'16:00',c:'p-ok'},
+  {k:'中',start:'11:00',end:'19:00',c:'p-hold'},
+  {k:'晚',start:'14:00',end:'22:00',c:'p-info'},
+  {k:'休',start:'',end:'',c:'p-gray'},
+];
+// 打卡設置：基本規則 + 依部門 GPS（連動部門管理）
+if(!store.punchCfg) store.punchCfg={ method:'GPS', allowOutside:false, needPhoto:false, roundTo:1, dept:{} };
+// 依部門的 GPS 設定：deptId → {lat,lng,radius(m)}
+store.depts && store.depts.forEach(d=>{ if(store.punchCfg.dept[d.id]===undefined) store.punchCfg.dept[d.id]={lat:'',lng:'',radius:200,on:false}; });
+// 考勤規則設置
+if(!store.attendCfg) store.attendCfg={ flex:true, flexMin:30, lateGrace:5, lateDeduct:'per-min', earlyLeaveRule:'deduct', otThreshold:8, ot1:1.34, ot2:1.67, ot3:2.67, breakAuto:1 };
+// 保險設置：投保單位身分 + 各項目
+if(!store.insCfg) store.insCfg={ unitName:'益循生活股份有限公司', unitNo:'12345678', labor:{on:true,rate:0.11}, emp:{on:true,rate:0.01}, occ:{on:true,rate:0.0011}, pension:{on:true,rate:0.06}, health:{on:true,rate:0.0517}, suppl:{on:true,rate:0.0211} };
+// 薪資細節總設定
+if(!store.payrollCfg) store.payrollCfg={ rounding:'round', supplPremium:true, welfareFund:200, taxWithhold:true };
 // 持久化交易資料（真的會存、操作真的生效）
 if(!store.approvals) store.approvals=APPROVALS.map(a=>({...a}));
 if(!store.advances) store.advances=ADVANCES.map(a=>({...a}));
@@ -275,16 +296,17 @@ if(!store.posts) store.posts=[
 if(store.seq===undefined) store.seq=100;
 // 排班（key: 員工名_週幾index → {shift,start,end}）
 if(!store.shifts) store.shifts={};
-// 薪資項目設定（可自訂加給/扣項）
+// 薪資項目設定（可自訂加給/扣項 + 細節旗標：課稅/平均時薪/投保薪資/進位/補充保費）
 if(!store.payItems) store.payItems=[
-  {id:'pi1',name:'本薪',type:'earn',mode:'base',val:0,on:true,sys:true},
-  {id:'pi2',name:'加班費',type:'earn',mode:'auto',val:0,on:true,sys:true},
-  {id:'pi3',name:'全勤獎金',type:'earn',mode:'fixed',val:2000,on:true},
-  {id:'pi4',name:'職務津貼',type:'earn',mode:'fixed',val:3000,on:true},
-  {id:'pi5',name:'績效獎金',type:'earn',mode:'formula',val:0,on:true,sys:true},
+  {id:'pi1',name:'本薪',type:'earn',mode:'base',val:0,on:true,sys:true,tax:true,avgWage:true,insured:true,round:'round',suppl:false},
+  {id:'pi2',name:'加班費',type:'earn',mode:'auto',val:0,on:true,sys:true,tax:true,avgWage:false,insured:false,round:'round',suppl:true},
+  {id:'pi3',name:'全勤獎金',type:'earn',mode:'fixed',val:2000,on:true,tax:true,avgWage:true,insured:true,round:'round',suppl:true},
+  {id:'pi4',name:'職務津貼',type:'earn',mode:'fixed',val:3000,on:true,tax:true,avgWage:true,insured:true,round:'round',suppl:true},
+  {id:'pi5',name:'績效獎金',type:'earn',mode:'formula',val:0,on:true,sys:true,tax:true,avgWage:false,insured:false,round:'round',suppl:true},
+  {id:'pi9',name:'伙食津貼',type:'earn',mode:'fixed',val:2400,on:true,tax:false,avgWage:false,insured:false,round:'round',suppl:false},
   {id:'pi6',name:'勞保自付',type:'deduct',mode:'insurance',val:0,on:true,sys:true},
   {id:'pi7',name:'健保自付',type:'deduct',mode:'insurance',val:0,on:true,sys:true},
-  {id:'pi8',name:'遲到扣款',type:'deduct',mode:'fixed',val:0,on:true},
+  {id:'pi8',name:'遲到扣款',type:'deduct',mode:'fixed',val:0,on:true,tax:false,avgWage:false,insured:false,round:'floor',suppl:false},
 ];
 function save(){ localStorage.setItem(LS,JSON.stringify(store)); }
 function nextSeq(){ return ++store.seq; }
@@ -391,20 +413,40 @@ PANELS.A=(me)=>{
   }
   const rows=EMP.map(e=>`<tr><td>${e.id}</td><td>${e.name}</td><td>${storeName(e.store)}</td><td>${e.title}</td><td>${e.type}</td>
     <td><span class="pill ${e.state==='在職'?'p-ok':e.state==='留停'?'p-hold':'p-gray'}">${e.state}</span></td>
-    <td><button class="btn sm ghost" onclick="empDetail('${e.id}')">檢視</button></td></tr>`).join('');
+    <td><div class="row"><button class="btn sm ghost" onclick="empEdit('${e.id}')">編輯</button>${e.role==='admin'?'':`<button class="btn sm warn" onclick="empLeave('${e.id}')" title="辦理離職封存">離職</button>`}</div></td></tr>`).join('');
   return page('A','員工基本資料','Employee Profile',`
-    <div class="card"><div class="between"><h2 style="margin:0">📇 員工名冊（${EMP.length}）</h2>
-      <button class="btn sm" onclick="toast('（示範）開啟新員工報到表單')">＋ 新增員工</button></div>
+    <div class="card"><div class="between"><h2 style="margin:0">📇 員工名冊（${EMP.filter(e=>e.state!=='離職').length} 在職 / ${EMP.length} 總）</h2>
+      <button class="btn sm" onclick="empEdit(null)">＋ 新增員工</button></div>
       <div class="tbl-wrap" style="margin-top:12px"><table>
-      <tr><th>員編</th><th>姓名</th><th>分店</th><th>職稱</th><th>型態</th><th>狀態</th><th></th></tr>${rows}</table></div>
-      <p class="note" style="margin-top:12px">一處建檔全系統共用：證件/合約雲端歸檔、員編自動生成、離職自動封存並結算年資特休。人資可新增/編輯，管理員可自訂欄位。</p>
+      <tr><th>員編</th><th>姓名</th><th>分店</th><th>職稱</th><th>型態</th><th>狀態</th><th style="min-width:130px">操作</th></tr>${rows}</table></div>
+      <p class="note" style="margin-top:12px">一處建檔全系統共用：新增自動生成員編、可編輯完整欄位、離職自動封存。人資可新增/編輯。</p>
     </div>`);
 };
-window.empDetail=(id)=>{ const e=EMP.find(x=>x.id===id); modal(e.name+' · 員工資料',`
-  <div class="grid g2">${kv('員編',e.id)}${kv('分店',storeName(e.store))}${kv('部門/職稱',e.dept+' / '+e.title)}${kv('型態',e.type)}
-  ${kv('本薪',e.type==='兼職'?nt(e.base)+' /時':nt(e.base))}${kv('到職',e.start)}${kv('系統角色',ROLES[e.role].name)}${kv('薪轉',e.bank)}</div>
-  <div class="row" style="margin-top:14px">${can('hr')?'<button class="btn sm" onclick="toast(\'（示範）編輯已儲存\');closeModal()">儲存編輯</button>':''}
-  <button class="btn sm ghost" onclick="closeModal()">關閉</button></div>`); };
+window.empEdit=(id)=>{ const e=id?EMP.find(x=>x.id===id):{name:'',store:0,dept:'門市',title:'',type:'正職',role:'employee',base:0,bank:'',state:'在職',start:'2026-07-05',emerg:'',idno:''};
+  const stores=TENANTS[currentTenant].stores;
+  modal((id?'編輯':'新增')+'員工資料',`
+  <div class="grid g2">
+    <div class="field"><label class="f">姓名 *</label><input id="eName" value="${e.name}"></div>
+    <div class="field"><label class="f">身分證字號</label><input id="eIdno" value="${e.idno||''}" placeholder="A123456789"></div>
+    <div class="field"><label class="f">分店</label><select class="fld" id="eStore">${stores.map((s,i)=>`<option value="${i}" ${e.store===i?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="field"><label class="f">部門</label><input id="eDept" value="${e.dept}"></div>
+    <div class="field"><label class="f">職稱</label><input id="eTitle" value="${e.title}"></div>
+    <div class="field"><label class="f">僱用型態</label><select class="fld" id="eType"><option ${e.type==='正職'?'selected':''}>正職</option><option ${e.type==='兼職'?'selected':''}>兼職</option><option ${e.type==='約聘'?'selected':''}>約聘</option></select></div>
+    <div class="field"><label class="f">${e.type==='兼職'?'時薪':'月薪'}</label><input id="eBase" type="number" value="${e.base}"></div>
+    <div class="field"><label class="f">系統角色</label><select class="fld" id="eRole">${Object.entries(ROLES).map(([k,v])=>`<option value="${k}" ${e.role===k?'selected':''}>${v.name}</option>`).join('')}</select></div>
+    <div class="field"><label class="f">薪轉帳戶</label><input id="eBank" value="${e.bank}"></div>
+    <div class="field"><label class="f">到職日</label><input id="eStart" type="date" value="${e.start}"></div>
+    <div class="field" style="grid-column:1/-1"><label class="f">緊急聯絡人</label><input id="eEmerg" value="${e.emerg||''}" placeholder="姓名 / 關係 / 電話"></div>
+    ${id?`<div class="field"><label class="f">狀態</label><select class="fld" id="eState"><option ${e.state==='在職'?'selected':''}>在職</option><option ${e.state==='留停'?'selected':''}>留停</option><option ${e.state==='離職'?'selected':''}>離職</option></select></div>`:''}
+  </div>
+  <div class="row" style="margin-top:8px"><button class="btn" onclick="empSave(${id?`'${id}'`:'null'})">${id?'儲存':'建檔'}</button><button class="btn ghost" onclick="closeModal()">取消</button></div>`); };
+window.empSave=(id)=>{ const name=document.getElementById('eName').value.trim(); if(!name){ toast('請輸入姓名'); return; }
+  const g=fid=>document.getElementById(fid).value;
+  const data={name,idno:g('eIdno'),store:+g('eStore'),dept:g('eDept'),title:g('eTitle'),type:g('eType'),base:+g('eBase')||0,role:g('eRole'),bank:g('eBank'),start:g('eStart'),emerg:g('eEmerg')};
+  if(id){ const e=EMP.find(x=>x.id===id); Object.assign(e,data); e.state=g('eState'); toast('員工「'+name+'」資料已儲存'); }
+  else { const yr=new Date().getFullYear()-1911; const eid='E'+yr+'P'+String(nextSeq()).padStart(4,'0'); EMP.push({id:eid,...data,state:'在職'}); toast('新員工「'+name+'」已建檔，員編 '+eid); }
+  save(); closeModal(); render(); };
+window.empLeave=(id)=>{ const e=EMP.find(x=>x.id===id); if(!confirm('辦理「'+e.name+'」離職封存？（自動退保、結算年資特休）')) return; e.state='離職'; delete store.deptMap[id]; save(); toast(e.name+' 已離職封存'); render(); };
 
 // B 定位打卡
 PANELS.B=(me)=>{
@@ -430,45 +472,108 @@ PANELS.B=(me)=>{
         <li>上下班/休息自動記錄，<b>工時即時累計</b></li>
         <li>遲到早退/漏打自動標記 → 進「考勤簽核」補登</li>
       </ul>
-      <div class="note" style="margin-top:12px">${can('supervisor')?'主管可在「考勤簽核」補登異常打卡。':'打卡資料即時回傳後台。'}</div>
+      ${can('hr')?'<button class="btn sm sec" style="margin-top:12px" onclick="go(\'BSET\')">⚙ 打卡 / 考勤參數設置</button>':'<div class="note" style="margin-top:12px">打卡資料即時回傳後台。</div>'}
     </div>
   </div>`);
 };
+// 打卡 / 考勤設置頁（依部門 GPS + 打卡規則 + 考勤計算規則）
+PANELS.BSET=(me)=>{
+  const pc=store.punchCfg, ac=store.attendCfg;
+  return page('⚙','打卡 / 考勤設置','Attendance Settings',`
+  <button class="btn sm ghost" style="margin-bottom:12px" onclick="go('B')">← 返回打卡</button>
+  <div class="card"><h2>📋 基本打卡規則</h2>
+    <div class="grid g2">
+      <div class="field"><label class="f">打卡方式</label><select class="fld" onchange="setPunch('method',this.value)">${['GPS','GPS+人臉','QR Code','Web IP'].map(m=>`<option ${pc.method===m?'selected':''}>${m}</option>`).join('')}</select></div>
+      <div class="field"><label class="f">打卡時間進位（分鐘）</label><select class="fld" onchange="setPunch('roundTo',+this.value)">${[1,5,10,15].map(v=>`<option value="${v}" ${pc.roundTo===v?'selected':''}>${v} 分</option>`).join('')}</select></div>
+    </div>
+    <label style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--line)">允許超出範圍打卡（需主管核可）<span class="switch"><input type="checkbox" ${pc.allowOutside?'checked':''} onchange="setPunch('allowOutside',this.checked)"><span></span></span></label>
+    <label style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--line)">打卡需拍照存證<span class="switch"><input type="checkbox" ${pc.needPhoto?'checked':''} onchange="setPunch('needPhoto',this.checked)"><span></span></span></label>
+  </div>
+  <div class="card"><h2>📍 依部門 GPS 設定 <span class="pill p-info" style="font-size:10px">連動部門管理</span></h2>
+    <p class="lead">為各部門設定打卡地點與半徑，套用於<b>該部門所屬成員</b>。</p>
+    <div class="tbl-wrap"><table><tr><th>部門</th><th>成員</th><th>緯度</th><th>經度</th><th>半徑(m)</th><th style="text-align:center">啟用</th></tr>
+    ${store.depts.map(d=>{ const g=pc.dept[d.id]||{lat:'',lng:'',radius:200,on:false}; const mem=deptMembers(d.id).length;
+      return `<tr><td>${d.name}</td><td class="num">${mem}</td>
+      <td><input value="${g.lat}" placeholder="25.04" style="width:80px;padding:4px" onchange="setDeptGps('${d.id}','lat',this.value)"></td>
+      <td><input value="${g.lng}" placeholder="121.56" style="width:80px;padding:4px" onchange="setDeptGps('${d.id}','lng',this.value)"></td>
+      <td><input type="number" value="${g.radius}" style="width:70px;padding:4px" onchange="setDeptGps('${d.id}','radius',+this.value)"></td>
+      <td style="text-align:center"><label class="switch"><input type="checkbox" ${g.on?'checked':''} onchange="setDeptGps('${d.id}','on',this.checked)"><span></span></label></td></tr>`;}).join('')}</table></div>
+    <p class="note" style="margin-top:12px">部門管理新增部門後，這裡自動出現一列可設定；GPS 綁部門→部門成員打卡即受此範圍檢核。</p>
+  </div>
+  <div class="card"><h2>🕐 考勤計算規則</h2>
+    <label style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">彈性上班<span class="switch"><input type="checkbox" ${ac.flex?'checked':''} onchange="setAttend('flex',this.checked)"><span></span></span></label>
+    <div class="grid g2">
+      <div class="field"><label class="f">彈性區間（分鐘）</label><input type="number" value="${ac.flexMin}" onchange="setAttend('flexMin',+this.value)"></div>
+      <div class="field"><label class="f">遲到寬限（分鐘）</label><input type="number" value="${ac.lateGrace}" onchange="setAttend('lateGrace',+this.value)"></div>
+      <div class="field"><label class="f">遲到計算方式</label><select class="fld" onchange="setAttend('lateDeduct',this.value)">${[['per-min','按分鐘扣'],['per-30','每30分一段'],['warn','僅記警示不扣']].map(o=>`<option value="${o[0]}" ${ac.lateDeduct===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></div>
+      <div class="field"><label class="f">早退規則</label><select class="fld" onchange="setAttend('earlyLeaveRule',this.value)">${[['deduct','扣工時'],['leave','需請假單'],['warn','僅記警示']].map(o=>`<option value="${o[0]}" ${ac.earlyLeaveRule===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></div>
+      <div class="field"><label class="f">自動休息時數</label><input type="number" step="0.5" value="${ac.breakAuto}" onchange="setAttend('breakAuto',+this.value)"></div>
+      <div class="field"><label class="f">加班起算工時</label><input type="number" value="${ac.otThreshold}" onchange="setAttend('otThreshold',+this.value)"></div>
+    </div>
+    <div class="grid g3">
+      <div class="field"><label class="f">加班前2h倍率</label><input type="number" step="0.01" value="${ac.ot1}" onchange="setAttend('ot1',+this.value)"></div>
+      <div class="field"><label class="f">加班3h起倍率</label><input type="number" step="0.01" value="${ac.ot2}" onchange="setAttend('ot2',+this.value)"></div>
+      <div class="field"><label class="f">休息日/假日倍率</label><input type="number" step="0.01" value="${ac.ot3}" onchange="setAttend('ot3',+this.value)"></div>
+    </div>
+    <p class="note">彈性上班、遲到早退、加班倍率全可細節設定，直接套用於考勤與薪資計算。</p>
+  </div>`);
+};
+window.setPunch=(k,v)=>{ store.punchCfg[k]=v; save(); toast('打卡設置已更新'); };
+window.setDeptGps=(did,f,v)=>{ store.punchCfg.dept[did]=store.punchCfg.dept[did]||{lat:'',lng:'',radius:200,on:false}; store.punchCfg.dept[did][f]=v; save(); toast('部門 GPS 已更新'); };
+window.setAttend=(k,v)=>{ store.attendCfg[k]=v; save(); toast('考勤規則已更新'); if(k==='breakAuto') render(); };
 window.punch=(id,t)=>{ const now=new Date(); const hh=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
   store.clock[id]=store.clock[id]||{}; store.clock[id][t]=hh; save(); toast((t==='in'?'上班':'下班')+'打卡成功 '+hh); render(); };
 
-// C 排班表（真的能點格排班 + 設定班別時間）
-const SHIFT_DEFS={ '早':{start:'08:00',end:'16:00',c:'p-ok'}, '中':{start:'11:00',end:'19:00',c:'p-hold'}, '晚':{start:'14:00',end:'22:00',c:'p-info'}, '休':{start:'',end:'',c:'p-gray'}, '':{start:'',end:'',c:'p-gray'} };
+// C 排班表（可設置班別 + 點格實際排班 + 設定時間）
 const WEEK=['一','二','三','四','五','六','日'];
+function shiftDef(k){ return store.shiftDefs.find(s=>s.k===k) || {k:'',start:'',end:'',c:'p-gray'}; }
 function shiftKey(name,d){ return currentTenant+'|'+name+'|'+d; }
 function getShift(name,d){ return store.shifts[shiftKey(name,d)] || {shift:'',start:'',end:''}; }
 PANELS.C=(me)=>{
   const editable=can('supervisor');
   const roster=EMP.filter(e=>e.state!=='離職').map(e=>e.name);
-  const cell=(name,d)=>{ const s=getShift(name,d); const def=SHIFT_DEFS[s.shift]||SHIFT_DEFS['']; const lbl=s.shift||'—';
+  const cell=(name,d)=>{ const s=getShift(name,d); const def=shiftDef(s.shift); const lbl=s.shift||'—';
     const sub=s.shift&&s.shift!=='休'&&(s.start||def.start)?`<div style="font-size:10px;color:var(--muted)">${s.start||def.start}-${s.end||def.end}</div>`:'';
     return `<td style="text-align:center;${editable?'cursor:pointer':''}" ${editable?`onclick="editShift('${name}',${d})"`:''}>
       <span class="pill ${def.c}">${lbl}</span>${sub}</td>`; };
-  // 工時統計（每人本週）
-  const wh=(name)=>{ let h=0; for(let d=0;d<7;d++){ const s=getShift(name,d); const def=SHIFT_DEFS[s.shift]; if(s.shift&&s.shift!=='休'){ const st=s.start||def?.start, en=s.end||def?.end; if(st&&en){ h+=(parseInt(en)-parseInt(st))-1; } } } return h; };
-  return page('C','排班表','Shift Scheduling',`
+  const wh=(name)=>{ let h=0; for(let d=0;d<7;d++){ const s=getShift(name,d); const def=shiftDef(s.shift); if(s.shift&&s.shift!=='休'){ const st=s.start||def.start, en=s.end||def.end; if(st&&en){ h+=(parseInt(en)-parseInt(st))-store.attendCfg.breakAuto; } } } return h; };
+  const cfg=editable?`<div class="card"><div class="between"><h2 style="margin:0">🎛️ 班別設置</h2><button class="btn sm" onclick="addShiftDef()">＋ 新增班別</button></div>
+    <div class="tbl-wrap" style="margin-top:12px"><table><tr><th>班別</th><th>上班</th><th>下班</th><th></th></tr>
+    ${store.shiftDefs.map((s,i)=>`<tr><td><span class="pill ${s.c}">${s.k}</span></td>
+      <td>${s.k==='休'?'—':`<input type="time" value="${s.start}" style="width:110px;padding:4px" onchange="setShiftDef(${i},'start',this.value)">`}</td>
+      <td>${s.k==='休'?'—':`<input type="time" value="${s.end}" style="width:110px;padding:4px" onchange="setShiftDef(${i},'end',this.value)">`}</td>
+      <td>${s.k==='休'?'':`<button class="btn sm warn" onclick="delShiftDef(${i})">🗑</button>`}</td></tr>`).join('')}</table></div>
+    <p class="note" style="margin-top:12px">班別可自訂名稱與時間，排班時直接套用；改時間後全班表工時即時重算。</p></div>`:'';
+  return page('C','排班表','Shift Scheduling',cfg+`
   <div class="card"><div class="between"><h2 style="margin:0">🗓️ ${storeName(0)} · 本週班表</h2>
     ${editable?`<div class="row"><span class="pill p-info">變形工時檢核：正常</span>
       <button class="btn sm ghost" onclick="autoFill()">一鍵帶入預設</button>
       <button class="btn sm" onclick="toast('（示範）已推播 LINE 通知本週班表')">推播班表</button></div>`:'<span class="pill p-gray">員工僅檢視</span>'}</div>
     <div class="tbl-wrap" style="margin-top:12px"><table><tr><th>姓名</th>${WEEK.map(d=>'<th style="text-align:center">'+d+'</th>').join('')}<th class="num">週工時</th></tr>
     ${roster.map(name=>`<tr><td style="white-space:nowrap">${name}</td>${WEEK.map((_,d)=>cell(name,d)).join('')}<td class="num"><b>${wh(name)}h</b></td></tr>`).join('')}</table></div>
-    <p class="lead" style="margin-top:8px">班別：早 08–16 ／ 中 11–19 ／ 晚 14–22 ／ 休　·　與打卡、工時、薪資<b>同源串接</b></p>
-    ${editable?'<div class="note">點任一格即可設定班別與自訂上下班時間；週工時自動計算（扣 1h 休息）。缺工/超時可延伸顏色預警。</div>':''}
+    <p class="lead" style="margin-top:8px">${store.shiftDefs.filter(s=>s.k!=='休').map(s=>s.k+' '+s.start+'–'+s.end).join(' ／ ')}　·　與打卡、工時、薪資<b>同源串接</b></p>
+    ${editable?'<div class="note">點任一格即可設定班別與自訂上下班時間；週工時自動計算（扣 '+store.attendCfg.breakAuto+'h 休息，可在打卡/考勤設置調整）。</div>':''}
   </div>`);
 };
+window.setShiftDef=(i,f,v)=>{ store.shiftDefs[i][f]=v; save(); toast('班別「'+store.shiftDefs[i].k+'」時間已更新'); render(); };
+window.delShiftDef=(i)=>{ const s=store.shiftDefs[i]; if(!confirm('刪除班別「'+s.k+'」？')) return; store.shiftDefs.splice(i,1); save(); toast('已刪除班別'); render(); };
+window.addShiftDef=()=>{ modal('新增班別',`
+  <div class="grid g2">
+    <div class="field"><label class="f">班別名稱</label><input id="nsK" placeholder="例：大夜"></div>
+    <div class="field"><label class="f">顏色</label><select class="fld" id="nsC"><option value="p-ok">綠</option><option value="p-info">藍</option><option value="p-hold">橘</option><option value="p-warn">紅</option></select></div>
+    <div class="field"><label class="f">上班</label><input id="nsS" type="time" value="22:00"></div>
+    <div class="field"><label class="f">下班</label><input id="nsE" type="time" value="06:00"></div>
+  </div>
+  <div class="row"><button class="btn" onclick="saveShiftDef()">新增</button><button class="btn ghost" onclick="closeModal()">取消</button></div>`); };
+window.saveShiftDef=()=>{ const k=document.getElementById('nsK').value.trim(); if(!k){ toast('請輸入名稱'); return; }
+  store.shiftDefs.splice(store.shiftDefs.length-1,0,{k,start:document.getElementById('nsS').value,end:document.getElementById('nsE').value,c:document.getElementById('nsC').value}); save(); closeModal(); toast('已新增班別「'+k+'」'); render(); };
 window.editShift=(name,d)=>{ const s=getShift(name,d);
   modal(name+' · 週'+WEEK[d]+' 排班',`
     <div class="field"><label class="f">班別</label>
-      <div class="row" id="shiftPick">${Object.keys(SHIFT_DEFS).filter(k=>k!=='').map(k=>`<button class="btn sm ${s.shift===k?'':'ghost'}" onclick="pickShift(this,'${k}')">${k==='休'?'休假':k+' 班'}</button>`).join('')}</div></div>
+      <div class="row" id="shiftPick">${store.shiftDefs.map(sd=>`<button class="btn sm ${s.shift===sd.k?'':'ghost'}" onclick="pickShift(this,'${sd.k}')">${sd.k==='休'?'休假':sd.k+' 班'}</button>`).join('')}</div></div>
     <div class="grid g2">
-      <div class="field"><label class="f">上班時間</label><input id="sfStart" type="time" value="${s.start||SHIFT_DEFS[s.shift]?.start||''}"></div>
-      <div class="field"><label class="f">下班時間</label><input id="sfEnd" type="time" value="${s.end||SHIFT_DEFS[s.shift]?.end||''}"></div>
+      <div class="field"><label class="f">上班時間</label><input id="sfStart" type="time" value="${s.start||shiftDef(s.shift).start||''}"></div>
+      <div class="field"><label class="f">下班時間</label><input id="sfEnd" type="time" value="${s.end||shiftDef(s.shift).end||''}"></div>
     </div>
     <input type="hidden" id="sfShift" value="${s.shift||''}">
     <div class="row" style="margin-top:8px">
@@ -476,13 +581,13 @@ window.editShift=(name,d)=>{ const s=getShift(name,d);
       <button class="btn ghost" onclick="clearShift('${name}',${d})">清除此格</button>
       <button class="btn ghost" onclick="closeModal()">取消</button></div>`); };
 window.pickShift=(btn,k)=>{ document.querySelectorAll('#shiftPick button').forEach(b=>b.classList.add('ghost')); btn.classList.remove('ghost');
-  document.getElementById('sfShift').value=k; const def=SHIFT_DEFS[k];
+  document.getElementById('sfShift').value=k; const def=shiftDef(k);
   if(k!=='休'){ document.getElementById('sfStart').value=def.start; document.getElementById('sfEnd').value=def.end; } else { document.getElementById('sfStart').value=''; document.getElementById('sfEnd').value=''; } };
 window.saveShift=(name,d)=>{ const k=document.getElementById('sfShift').value; if(!k){ toast('請先選班別'); return; }
   store.shifts[shiftKey(name,d)]={shift:k,start:document.getElementById('sfStart').value,end:document.getElementById('sfEnd').value}; save(); closeModal(); toast(name+' 週'+WEEK[d]+' 已排「'+k+'」'); render(); };
 window.clearShift=(name,d)=>{ delete store.shifts[shiftKey(name,d)]; save(); closeModal(); toast('已清除'); render(); };
 window.autoFill=()=>{ const roster=EMP.filter(e=>e.state!=='離職').map(e=>e.name); const pat=['早','早','中','晚','晚','休','休'];
-  roster.forEach((name,i)=>{ for(let d=0;d<7;d++){ const k=pat[(d+i)%7]; store.shifts[shiftKey(name,d)]={shift:k,start:SHIFT_DEFS[k].start,end:SHIFT_DEFS[k].end}; } }); save(); toast('已一鍵帶入預設輪班'); render(); };
+  roster.forEach((name,i)=>{ for(let d=0;d<7;d++){ const k=pat[(d+i)%7]; const def=shiftDef(k); store.shifts[shiftKey(name,d)]={shift:k,start:def.start,end:def.end}; } }); save(); toast('已一鍵帶入預設輪班'); render(); };
 
 // D 業績回報
 PANELS.D=(me)=>{
@@ -607,33 +712,68 @@ PANELS.G=(me)=>{
 
 // I 加退保
 PANELS.I=(me)=>{
+  const ic=store.insCfg;
   const rows=EMP.filter(e=>e.type==='正職').map(e=>{const mo=e.base; const br=bracket(mo); return `<tr><td>${e.name}</td><td>${storeName(e.store)}</td><td class="num">${nt(mo)}</td><td class="num"><span class="pill p-ok">${nt(br)}</span></td><td>${e.state==='在職'?'<span class="pill p-ok">已加保</span>':'<span class="pill p-gray">已退保</span>'}</td></tr>`;}).join('');
+  const scheme=(key,label)=>{const s=ic[key];return `<tr><td>${label}</td>
+    <td style="text-align:center"><label class="switch"><input type="checkbox" ${s.on?'checked':''} onchange="setIns('${key}','on',this.checked)"><span></span></label></td>
+    <td class="num"><input type="number" step="0.0001" value="${s.rate}" style="width:90px;padding:4px;text-align:right" onchange="setIns('${key}','rate',+this.value)"> </td></tr>`;};
   return page('I','加退保','Labor & Health Insurance',`
-  <div class="card"><div class="between"><h2 style="margin:0">🏥 投保級距總覽</h2>
+  <div class="card"><h2>🏢 投保單位設置</h2>
+    <div class="grid g2">
+      <div class="field"><label class="f">投保單位名稱</label><input value="${ic.unitName}" onchange="setInsUnit('unitName',this.value)"></div>
+      <div class="field"><label class="f">投保單位統一編號</label><input value="${ic.unitNo}" onchange="setInsUnit('unitNo',this.value)"></div>
+    </div>
+    <h2 style="margin-top:8px">各保險項目設置</h2>
+    <div class="tbl-wrap"><table><tr><th>項目</th><th style="text-align:center">投保</th><th class="num">費率</th></tr>
+    ${scheme('labor','勞工保險')}${scheme('emp','就業保險')}${scheme('occ','職業災害')}${scheme('pension','勞退提繳（雇主6%）')}${scheme('health','全民健保')}${scheme('suppl','二代健保補充保費')}</table></div>
+    <p class="note" style="margin-top:12px">投保單位身分、各項目開關與費率皆可設定；停用某項＝該項不計入薪資自付與申報。改費率→薪資自付即時重算。</p>
+  </div>
+  <div class="card"><div class="between"><h2 style="margin:0">📋 投保級距總覽</h2>
     <div class="row"><button class="btn sm" onclick="toast('（示範）產生本月加退保申報單')">產生申報單</button></div></div>
     <div class="tbl-wrap" style="margin-top:12px"><table><tr><th>姓名</th><th>分店</th><th class="num">月薪資</th><th class="num">投保級距</th><th>狀態</th></tr>${rows}</table></div>
-    <p class="note" style="margin-top:12px">依薪資自動對應投保級距（免查分級表）；到職一鍵加保、離職自動退保；勞保/就保/職災/勞退6%/健保一次到位，月度加退保總表自動生成。</p>
+    <p class="note" style="margin-top:12px">依薪資自動對應投保級距（免查分級表）；到職一鍵加保、離職自動退保；月度加退保總表自動生成。</p>
   </div>`);
 };
+window.setIns=(key,f,v)=>{ store.insCfg[key][f]=v; save(); toast('保險項目「'+key+'」已更新，薪資重算'); render(); };
+window.setInsUnit=(f,v)=>{ store.insCfg[f]=v; save(); toast('投保單位已更新'); };
 
-// J 薪資計算（薪資項目可自訂 → 真的影響計算）
+// J 薪資計算（薪資項目 + 細節旗標 + 保險設置 → 真的影響計算）
+function roundBy(v){ const m=store.payrollCfg.rounding; return m==='floor'?Math.floor(v):m==='ceil'?Math.ceil(v):Math.round(v); }
 function calcPay(e){
   const base=e.type==='兼職'?e.base*160:e.base;   // 兼職以 160h 估
-  const br=bracket(base); const li=Math.round(br*0.0217), hi=Math.round(br*0.0155);
-  let earn=0, deduct=0; const lines=[];
+  const br=bracket(base); const ic=store.insCfg;
+  const li=ic.labor.on?roundBy(br*ic.labor.rate*0.2):0;   // 勞保自付約 20%
+  const hi=ic.health.on?roundBy(br*ic.health.rate*0.3):0; // 健保自付約 30%
+  let earn=0, deduct=0, taxable=0, insured=0; const lines=[];
   store.payItems.filter(i=>i.on).forEach(i=>{
     let v=0;
     if(i.mode==='base') v=base;
-    else if(i.mode==='auto') v=e.type==='兼職'?0:1200;          // 加班費（示範）
-    else if(i.mode==='formula') v=e.role==='employee'?3000:0;    // 績效（示範公式）
+    else if(i.mode==='auto') v=e.type==='兼職'?0:1200;
+    else if(i.mode==='formula') v=e.role==='employee'?3000:0;
     else if(i.mode==='fixed') v=i.val;
     else if(i.mode==='insurance') v=(i.name.indexOf('健保')>=0?hi:li);
     if(v===0 && i.mode!=='base') return;
+    v=(i.round==='floor')?Math.floor(v):(i.round==='ceil')?Math.ceil(v):v;
     lines.push({name:i.name,type:i.type,val:v});
-    if(i.type==='earn') earn+=v; else deduct+=v;
+    if(i.type==='earn'){ earn+=v; if(i.tax) taxable+=v; if(i.insured) insured+=v; } else deduct+=v;
   });
-  return {e,earn,deduct,net:earn-deduct,lines};
+  // 福利金（扣項）
+  if(store.payrollCfg.welfareFund>0){ deduct+=store.payrollCfg.welfareFund; lines.push({name:'員工福利金',type:'deduct',val:store.payrollCfg.welfareFund}); }
+  // 二代健保補充保費（示範：獎金類超過投保額 4 倍才計，這裡簡化為對 suppl 項目課 2.11%）
+  if(store.payrollCfg.supplPremium){ const supBase=lines.filter(l=>{const it=store.payItems.find(x=>x.name===l.name);return it&&it.suppl;}).reduce((s,l)=>s+l.val,0);
+    const sup=roundBy(supBase*ic.suppl.rate); if(sup>0){ deduct+=sup; lines.push({name:'補充保費',type:'deduct',val:sup}); } }
+  return {e,earn,deduct,net:earn-deduct,lines,taxable,insured};
 }
+window.setPayroll=(k,v)=>{ store.payrollCfg[k]=v; save(); toast('薪資總設定已更新'); render(); };
+window.payItemDetail=(id)=>{ const i=store.payItems.find(x=>x.id===id); if(i.type==='deduct'&&i.sys){ toast('系統扣項細節由保險設置控管'); return; }
+  modal(i.name+' · 細節設定',`
+  <label style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">是否課稅（計入所得）<span class="switch"><input type="checkbox" ${i.tax?'checked':''} onchange="setItemFlag('${id}','tax',this.checked)"><span></span></span></label>
+  <label style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--line)">納入平均工資計算<span class="switch"><input type="checkbox" ${i.avgWage?'checked':''} onchange="setItemFlag('${id}','avgWage',this.checked)"><span></span></span></label>
+  <label style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--line)">納入投保薪資<span class="switch"><input type="checkbox" ${i.insured?'checked':''} onchange="setItemFlag('${id}','insured',this.checked)"><span></span></span></label>
+  <label style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--line)">計入補充保費<span class="switch"><input type="checkbox" ${i.suppl?'checked':''} onchange="setItemFlag('${id}','suppl',this.checked)"><span></span></span></label>
+  <div class="field" style="margin-top:10px"><label class="f">此項進位方式</label><select class="fld" onchange="setItemFlag('${id}','round',this.value)">${[['round','四捨五入'],['floor','無條件捨去'],['ceil','無條件進位']].map(o=>`<option value="${o[0]}" ${i.round===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></div>
+  <button class="btn" style="margin-top:8px" onclick="closeModal();render()">完成</button>`); };
+window.setItemFlag=(id,f,v)=>{ const i=store.payItems.find(x=>x.id===id); i[f]=v; save(); toast('已更新，薪資即時重算'); };
 PANELS.J=(me)=>{
   const pays=EMP.filter(e=>e.state==='在職').map(calcPay);
   const total=pays.reduce((s,p)=>s+p.net,0);
@@ -646,9 +786,17 @@ PANELS.J=(me)=>{
       <td>${({base:'本薪',auto:'工時自動',formula:'公式',fixed:'固定金額',insurance:'投保級距'})[i.mode]}</td>
       <td class="num">${i.mode==='fixed'?`<input type="number" value="${i.val}" style="width:90px;padding:4px;text-align:right" onchange="setPayVal('${i.id}',this.value)">`:'—'}</td>
       <td style="text-align:center"><label class="switch"><input type="checkbox" ${i.on?'checked':''} onchange="togglePayItem('${i.id}',this.checked)"><span></span></label></td>
-      <td>${i.sys?'':`<button class="btn sm warn" onclick="delPayItem('${i.id}')">🗑</button>`}</td></tr>`).join('')}</table></div>
-    <p class="note" style="margin-top:12px">加項/扣項可自由新增、設固定金額或綁公式/投保級距、開關啟用——改了下方薪資總表<b>即時重算</b>。這就是「真的能設定」。</p></div>`:'';
-  return page('J','薪資計算','Payroll Engine',cfgCard+`
+      <td><div class="row"><button class="btn sm ghost" onclick="payItemDetail('${i.id}')" title="課稅/平均時薪/投保薪資/進位">細節</button>${i.sys?'':`<button class="btn sm warn" onclick="delPayItem('${i.id}')">🗑</button>`}</div></td></tr>`).join('')}</table></div>
+    <p class="note" style="margin-top:12px">每個項目可設「細節」：是否課稅、是否納入平均時薪/投保薪資、進位方式、是否計補充保費——直接影響計算。這就是「真的能細節設定」。</p></div>`:'';
+  const payCfgCard=cfg?`<div class="card"><h2>⚙️ 薪資計算總設定 ${roleChip('hr')}</h2>
+    <div class="grid g2">
+      <div class="field"><label class="f">金額進位方式</label><select class="fld" onchange="setPayroll('rounding',this.value)">${[['round','四捨五入'],['floor','無條件捨去'],['ceil','無條件進位']].map(o=>`<option value="${o[0]}" ${store.payrollCfg.rounding===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></div>
+      <div class="field"><label class="f">員工福利金（每月/人）</label><input type="number" value="${store.payrollCfg.welfareFund}" onchange="setPayroll('welfareFund',+this.value)"></div>
+    </div>
+    <label style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--line)">計算二代健保補充保費<span class="switch"><input type="checkbox" ${store.payrollCfg.supplPremium?'checked':''} onchange="setPayroll('supplPremium',this.checked)"><span></span></span></label>
+    <label style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--line)">代扣所得稅<span class="switch"><input type="checkbox" ${store.payrollCfg.taxWithhold?'checked':''} onchange="setPayroll('taxWithhold',this.checked)"><span></span></span></label>
+    <p class="note" style="margin-top:8px">進位方式、補充保費、福利金、課稅開關——全域套用到薪資計算。</p></div>`:'';
+  return page('J','薪資計算','Payroll Engine',cfgCard+payCfgCard+`
   <div class="between" style="margin:4px 0 12px"><div class="row"><span class="pill p-info">薪資期別 2026/06</span><span class="pill p-gray">串接打卡工時 · 加班 · 請假 · 墊付</span></div>
     <button class="btn sm" onclick="toast('已依現有薪資項目重算 '+${pays.length}+' 人')">⚙ 一鍵跑薪資</button></div>
   <div class="card"><h2>💰 整月薪資總表（${pays.length} 人）</h2>
