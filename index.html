@@ -43,13 +43,17 @@
   .nav button .tag{width:22px;height:22px;border-radius:6px;background:var(--brand-l);color:var(--brand-d);
     display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0}
   .nav button:hover{background:var(--brand-ll)}
-  .nav button.on{background:var(--brand-l);color:var(--brand-d);font-weight:700}
-  .nav button.on .tag{background:var(--brand);color:#fff}
+  .nav button.on{background:var(--brand-l);color:var(--brand-d);font-weight:700;position:relative}
+  .nav button.on::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:0 3px 3px 0;background:linear-gradient(180deg,var(--brand),var(--brand-d))}
+  .nav button.on .tag{background:var(--brand);color:#fff;box-shadow:0 2px 6px rgba(31,138,76,.35)}
+  .nav button:active{transform:scale(.98)}
   .main{flex:1;min-width:0;overflow-y:auto;padding:16px}
   .wrap{max-width:1100px;margin:0 auto}
 
   h1.pt{font-size:20px;margin:0 0 2px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   h1.pt .en{font-size:12px;color:var(--muted);font-weight:500}
+  h1.pt .tag{background:linear-gradient(135deg,var(--brand),var(--brand-d))!important;color:#fff!important;box-shadow:0 3px 8px rgba(31,138,76,.3)}
+  .card h2{letter-spacing:.2px}
   .lead{color:var(--muted);margin:0 0 16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:14px}
   .card h2{font-size:15px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
@@ -168,6 +172,7 @@
       <label>角色</label>
       <select id="roleSel"></select>
     </div>
+    <button id="bell" onclick="openNotifs()" style="position:relative;background:rgba(255,255,255,.16);border:none;color:#fff;border-radius:9px;padding:6px 9px;font-size:16px;cursor:pointer">🔔<span id="bellBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ff5a5f;color:#fff;font-size:10px;font-weight:800;min-width:16px;height:16px;border-radius:9px;align-items:center;justify-content:center;padding:0 3px">0</span></button>
     <div class="whoami"><span class="avatar" id="avatar">王</span></div>
   </div>
   <div class="body">
@@ -279,7 +284,7 @@ let ADVANCES=[
 ];
 const LS='hrm_demo_state_v10';
 // 每租戶獨立的資料鍵（切換租戶只看該租戶資料）
-const TENANT_KEYS=['emps','depts','deptMap','sales','approvals','shifts','leaveBal','scores','bonus','attendance','pendingEmps','posts','payItems','shiftDefs','apprItems','punchCfg','attendCfg','insCfg','payrollCfg','leaveCfg','customFields','perm','clock'];
+const TENANT_KEYS=['emps','depts','deptMap','sales','approvals','shifts','leaveBal','scores','bonus','attendance','pendingEmps','posts','payItems','shiftDefs','apprItems','punchCfg','attendCfg','insCfg','payrollCfg','leaveCfg','customFields','perm','clock','notifs'];
 function freshLeaveCfg(){ const o={}; LEAVE_TYPES.forEach(l=>o[l.k]=l.on); return o; }
 function freshPerm(){ const p={}; ['employee','supervisor','hr','admin'].forEach(r=>p[r]={}); return p; }
 function defaultPayItems(){ return [
@@ -295,7 +300,7 @@ function defaultPayItems(){ return [
 ]; }
 // 一個租戶的預設資料（新客戶剛購買：設定齊全但無員工/部門/紀錄）
 function defaultTenantData(){ return {
-  emps:[], depts:[], deptMap:{}, sales:[], approvals:[], shifts:{}, leaveBal:{}, scores:{}, bonus:{}, attendance:{}, pendingEmps:[], posts:[], clock:{},
+  emps:[], depts:[], deptMap:{}, sales:[], approvals:[], shifts:{}, leaveBal:{}, scores:{}, bonus:{}, attendance:{}, pendingEmps:[], posts:[], clock:{}, notifs:[],
   leaveCfg:freshLeaveCfg(), perm:freshPerm(), customFields:[{label:'制服尺寸'},{label:'車牌號碼'}],
   shiftDefs:[{k:'早',start:'08:00',end:'16:00',c:'p-ok'},{k:'中',start:'11:00',end:'19:00',c:'p-hold'},{k:'晚',start:'14:00',end:'22:00',c:'p-info'},{k:'休',start:'',end:'',c:'p-gray'}],
   punchCfg:{method:'GPS',allowOutside:false,needPhoto:false,roundTo:1,dept:{}},
@@ -342,6 +347,17 @@ window.setFilter=(k,v)=>{ rosterFilter[k]=v; render(); };
 
 // ---------- UI helpers ----------
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),1900); }
+// 通知中心（模擬 LINE 推播 / 系統提醒）
+function nowHM(){ const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+function notify(icon,title,body){ if(!store.notifs)store.notifs=[]; store.notifs.unshift({id:nextSeq(),icon,title,body,time:nowHM(),read:false}); if(store.notifs.length>60)store.notifs.length=60; save(); updateBell(); }
+function updateBell(){ const b=document.getElementById('bellBadge'); if(!b)return; const n=(store.notifs||[]).filter(x=>!x.read).length; b.textContent=n>99?'99+':n; b.style.display=n?'flex':'none'; }
+function openNotifs(){ const ns=store.notifs||[]; ns.forEach(x=>x.read=true); save(); updateBell();
+  const body=ns.length?('<div class="row" style="justify-content:flex-end;margin-bottom:6px"><button class="btn sm ghost" onclick="clearNotifs()">全部清空</button></div>'+
+    ns.map(x=>`<div style="display:flex;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line)"><div style="font-size:20px;flex-shrink:0">${x.icon}</div><div style="flex:1;min-width:0"><b>${x.title}</b><div style="font-size:12.5px;color:var(--muted)">${x.body}</div></div><div style="font-size:11px;color:var(--muted);flex-shrink:0">${x.time}</div></div>`).join(''))
+    :'<p class="lead" style="text-align:center;padding:24px">目前沒有通知 🔕</p>';
+  modal('🔔 通知中心（模擬 LINE 推播）', body); }
+window.openNotifs=openNotifs;
+window.clearNotifs=()=>{ store.notifs=[]; save(); updateBell(); closeModal(); toast('已清空通知'); };
 function modal(title,html){ document.getElementById('mTitle').textContent=title; document.getElementById('mBody').innerHTML=html; document.getElementById('modal').classList.add('show'); }
 function closeModal(){ document.getElementById('modal').classList.remove('show'); }
 window.closeModal=closeModal;
@@ -378,6 +394,7 @@ window.go=go;
 function render(){
   const me=meFor(currentRole);
   document.getElementById('avatar').textContent=me.name[0];
+  updateBell();
   renderNav();
   const el=document.getElementById('content');
   const fn=PANELS[currentMod]||PANELS.home;
@@ -591,7 +608,7 @@ window.submitOnboard=()=>{ const name=document.getElementById('obName').value.tr
   save(); closeModal(); toast('報到表已送出，待人資審核'); render(); };
 window.approveOnboard=(tmp)=>{ const p=store.pendingEmps.find(x=>x.tmp===tmp); const yr=new Date().getFullYear()-1911; const eid='E'+yr+'P'+String(nextSeq()).padStart(4,'0');
   EMP.push({id:eid,name:p.name,idno:p.idno,store:p.store,dept:p.dept,title:p.title,type:p.type,role:'employee',base:p.base||(p.type==='兼職'?190:30000),bank:p.bank,start:p.start,emerg:p.emerg,custom:p.custom,state:'在職'});
-  store.pendingEmps=store.pendingEmps.filter(x=>x.tmp!==tmp); save(); toast(p.name+' 已核准入職，員編 '+eid); render(); };
+  store.pendingEmps=store.pendingEmps.filter(x=>x.tmp!==tmp); notify('🎉','新員工報到核准', p.name+' 已核准入職（員編 '+eid+'），請完成加保'); save(); toast(p.name+' 已核准入職，員編 '+eid); render(); };
 window.rejectOnboard=(tmp)=>{ const p=store.pendingEmps.find(x=>x.tmp===tmp); if(!confirm('退回「'+p.name+'」的報到申請？')) return; store.pendingEmps=store.pendingEmps.filter(x=>x.tmp!==tmp); save(); toast('已退回'); render(); };
 
 // B 定位打卡
@@ -676,7 +693,9 @@ window.setPunch=(k,v)=>{ store.punchCfg[k]=v; save(); toast('打卡設置已更�
 window.setDeptGps=(did,f,v)=>{ store.punchCfg.dept[did]=store.punchCfg.dept[did]||{lat:'',lng:'',radius:200,on:false}; store.punchCfg.dept[did][f]=v; save(); toast('部門 GPS 已更新'); };
 window.setAttend=(k,v)=>{ store.attendCfg[k]=v; save(); toast('考勤規則已更新'); if(k==='breakAuto') render(); };
 window.punch=(id,t)=>{ const now=new Date(); const hh=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-  store.clock[id]=store.clock[id]||{}; store.clock[id][t]=hh; save(); toast((t==='in'?'上班':'下班')+'打卡成功 '+hh); render(); };
+  const e=EMP.find(x=>x.id===id)||{name:''}; store.clock[id]=store.clock[id]||{}; store.clock[id][t]=hh;
+  notify('⏰',(t==='in'?'上班':'下班')+'打卡成功', e.name+' '+hh+' 於'+storeName(e.store||0)+'（GPS 範圍內）');
+  save(); toast((t==='in'?'上班':'下班')+'打卡成功 '+hh); render(); };
 
 // C 排班表（可設置班別 + 點格實際排班 + 設定時間）
 const WEEK=['一','二','三','四','五','六','日'];
@@ -782,6 +801,7 @@ window.submitSales=(empId)=>{ const e=EMP.find(x=>x.id===empId); const g=id=>+do
   const amt=g('d_amt'); if(amt<=0){ toast('請輸入營業額'); return; }
   const iso=document.getElementById('d_date').value; const date=iso?(+iso.slice(0,4)-1911)+'/'+iso.slice(5,7)+'/'+iso.slice(8,10):'—';
   store.sales.unshift({store:e.store,date,amt,guests:g('d_g'),food:g('d_food'),labor:g('d_labor'),waste:g('d_waste'),by:e.name});
+  notify('📈','業績回報已上傳', storeName(e.store)+' '+date+'：營業額 '+nt(amt)+'（'+e.name+'）');
   save(); toast('業績已送出，總部與儀表板即時可見'); render(); };
 
 // 本月考勤（由員編衍生示範值，一次種入後持久化；遲到/早退依 attendCfg 判定）
@@ -822,6 +842,7 @@ window.submitLeave=(empId)=>{ const e=EMP.find(x=>x.id===empId); const type=docu
   const reason=document.getElementById('eaReason').value.trim(); const date=document.getElementById('eaDate').value;
   const kind=type==='加班'?'ot':'leave';
   store.approvals.push({id:nextSeq(),empId,who:e.name,store:e.store,type,detail:reason||type+' 申請',hrs,date,state:'待核',kind});
+  notify('📝','新簽核待處理', e.name+' 送出「'+type+' '+hrs+'h」，待主管核准');
   save(); toast('「'+type+' '+hrs+'h」已送出，進主管簽核'); render(); };
 
 // F 考勤簽核（真的能核准/退回/撤銷/刪除）
@@ -854,6 +875,7 @@ function applyLeaveBalance(a,dir){ // dir=-1 扣, +1 還
 }
 window.approve=(id,ok)=>{ const a=store.approvals.find(x=>x.id===id); const was=a.state; a.state=ok?'已核准':'已退回';
   if(ok && was!=='已核准') applyLeaveBalance(a,-1);   // 核准→扣特休/加班→補休+
+  notify(ok?'✅':'↩️', a.type+(ok?' 已核准':' 已退回'), '@'+a.who+'：你的「'+a.type+'」申請'+(ok?'已核准':'被退回'));
   save(); toast(a.who+' 的'+a.type+' '+(ok?'已核准（餘額已回寫）':'已退回')); render(); };
 window.unapprove=(id)=>{ const a=store.approvals.find(x=>x.id===id); if(a.state==='已核准') applyLeaveBalance(a,+1); // 撤銷核准→還回
   a.state='待核'; save(); toast('已撤銷「'+a.who+' 的'+a.type+'」回待核'); render(); };
@@ -919,7 +941,8 @@ window.setApprItem=(id,f,v)=>{ const it=store.apprItems.find(x=>x.id===id); it[f
 window.delApprItem=(id)=>{ if(!confirm('刪除此考核項目？')) return; store.apprItems=store.apprItems.filter(x=>x.id!==id); save(); toast('已刪除'); render(); };
 window.addApprItem=()=>{ store.apprItems.push({id:'ap'+nextSeq(),name:'新項目',weight:0}); save(); toast('已新增考核項目'); render(); };
 window.setScore=(eid,iid,g)=>{ store.scores[eid]=store.scores[eid]||{}; if(g)store.scores[eid][iid]=g; else delete store.scores[eid][iid]; save(); render(); };
-window.applyBonus=()=>{ EMP.forEach(e=>{ store.bonus[e.id]=apprBonus(e.id); }); save(); toast('已套用績效獎金到薪資計算'); };
+window.applyBonus=()=>{ EMP.forEach(e=>{ store.bonus[e.id]=apprBonus(e.id); }); notify('🏅','績效獎金已核定','本期考績獎金已套用至薪資計算'); save(); toast('已套用績效獎金到薪資計算'); };
+window.pushPayslips=()=>{ const n=EMP.filter(e=>e.state==='在職').length; notify('🔒','電子薪資條已發放', '已推播 '+n+' 份薪資條至員工 LINE（加密·僅本人可查）'); toast('已批次推播 '+n+' 份薪資條'); render(); };
 
 // I 加退保
 PANELS.I=(me)=>{
@@ -1144,7 +1167,7 @@ window.editPost=(id)=>{ const p=store.posts.find(x=>x.id===id); modal('編輯公
 window.savePost=(id)=>{ const title=document.getElementById('poTitle').value.trim(); if(!title){ toast('請輸入標題'); return; }
   const body=document.getElementById('poBody').value.trim(), pin=document.getElementById('poPin').checked;
   if(id){ const p=store.posts.find(x=>x.id===id); p.title=title; p.body=body; p.pin=pin; toast('公告已更新'); }
-  else { const me=meFor(currentRole); store.posts.push({id:nextSeq(),title,body,by:me.name,role:currentRole,date:'2026/07/05',pin}); toast('公告已發布並推播'); }
+  else { const me=meFor(currentRole); store.posts.push({id:nextSeq(),title,body,by:me.name,role:currentRole,date:'2026/07/05',pin}); notify('📣','新公告',title); toast('公告已發布並推播'); }
   save(); closeModal(); render(); };
 window.pinPost=(id)=>{ const p=store.posts.find(x=>x.id===id); p.pin=!p.pin; save(); toast(p.pin?'已置頂':'已取消置頂'); render(); };
 window.delPost=(id)=>{ if(!confirm('刪除此公告？')) return; store.posts=store.posts.filter(x=>x.id!==id); save(); toast('已刪除'); render(); };
@@ -1168,7 +1191,7 @@ PANELS.K=(me)=>{
     <p class="note" style="margin-top:12px">完整逐項明細（含加給/獎金/墊付核銷/勞健保/補充保費/福利金）即時由薪資計算產出，金額一致；推播 LINE、加密僅本人可查。</p></div>`);
   }
   return page('K','電子薪資條','Digital Payslip',`<div class="card"><div class="between"><h2 style="margin:0">📤 薪資條發放</h2>
-    <button class="btn sm" onclick="toast('（示範）已批次推播 '+EMP.filter(e=>e.state==='在職').length+' 份薪資條至員工 LINE')">批次推播全部</button></div>
+    <button class="btn sm" onclick="pushPayslips()">批次推播全部</button></div>
     <div class="tbl-wrap" style="margin-top:12px"><table><tr><th>姓名</th><th>分店</th><th>期別</th><th>狀態</th><th></th></tr>
     ${EMP.filter(e=>e.state==='在職').map(e=>`<tr><td>${e.name}</td><td>${storeName(e.store)}</td><td>2026/06</td><td><span class="pill p-hold">待推播</span></td><td><button class="btn sm ghost" onclick="payslip('${e.id}')">預覽</button></td></tr>`).join('')}</table></div>
     <p class="note" style="margin-top:12px">與薪資計算同源、金額一致不出錯。加密後個人 LINE 可查，保護薪資隱私。</p></div>`);
@@ -1280,5 +1303,3 @@ boot();
 </script>
 </body>
 </html>
-
-<!-- v10 build nudge 1783250759 -->
