@@ -306,6 +306,18 @@ if(!store.apprItems) store.apprItems=[
 // 考核分數 {empId:{itemId:grade}}；獎金 {empId:amount}
 if(!store.scores) store.scores={};
 if(!store.bonus) store.bonus={};
+// 租戶 分店/名稱 覆寫（可持久化編輯）+ 自訂員工欄位
+if(store.tenantStores){ Object.keys(store.tenantStores).forEach(k=>{ if(TENANTS[k]) TENANTS[k].stores=store.tenantStores[k]; }); }
+else { store.tenantStores={}; Object.keys(TENANTS).forEach(k=>store.tenantStores[k]=TENANTS[k].stores.slice()); }
+if(store.tenantMeta){ Object.keys(store.tenantMeta).forEach(k=>{ if(TENANTS[k]) Object.assign(TENANTS[k],store.tenantMeta[k]); }); }
+else store.tenantMeta={};
+if(!store.customFields) store.customFields=[{label:'制服尺寸'},{label:'車牌號碼'}];
+// 業績回報紀錄（可持久化新增）
+if(!store.sales) store.sales=[
+  {store:0,date:'2026/07/05',amt:38600,guests:142,food:13900,labor:6200,waste:420,by:'王大明'},
+  {store:3,date:'2026/07/05',amt:31250,guests:118,food:12100,labor:5800,waste:610,by:'—'},
+  {store:1,date:'2026/07/05',amt:22400,guests:95,food:9700,labor:5500,waste:1180,by:'陳美惠'},
+];
 // 排班（key: 員工名_週幾index → {shift,start,end}）
 if(!store.shifts) store.shifts={};
 // 薪資項目設定（可自訂加給/扣項 + 細節旗標：課稅/平均時薪/投保薪資/進位/補充保費）
@@ -449,12 +461,14 @@ window.empEdit=(id)=>{ const e=id?EMP.find(x=>x.id===id):{name:'',store:0,dept:'
     <div class="field"><label class="f">薪轉帳戶</label><input id="eBank" value="${e.bank}"></div>
     <div class="field"><label class="f">到職日</label><input id="eStart" type="date" value="${e.start}"></div>
     <div class="field" style="grid-column:1/-1"><label class="f">緊急聯絡人</label><input id="eEmerg" value="${e.emerg||''}" placeholder="姓名 / 關係 / 電話"></div>
+    ${store.customFields.map((f,i)=>`<div class="field"><label class="f">${f.label}</label><input id="ecf${i}" value="${(e.custom&&e.custom[f.label])||''}"></div>`).join('')}
     ${id?`<div class="field"><label class="f">狀態</label><select class="fld" id="eState"><option ${e.state==='在職'?'selected':''}>在職</option><option ${e.state==='留停'?'selected':''}>留停</option><option ${e.state==='離職'?'selected':''}>離職</option></select></div>`:''}
   </div>
   <div class="row" style="margin-top:8px"><button class="btn" onclick="empSave(${id?`'${id}'`:'null'})">${id?'儲存':'建檔'}</button><button class="btn ghost" onclick="closeModal()">取消</button></div>`); };
 window.empSave=(id)=>{ const name=document.getElementById('eName').value.trim(); if(!name){ toast('請輸入姓名'); return; }
   const g=fid=>document.getElementById(fid).value;
-  const data={name,idno:g('eIdno'),store:+g('eStore'),dept:g('eDept'),title:g('eTitle'),type:g('eType'),base:+g('eBase')||0,role:g('eRole'),bank:g('eBank'),start:g('eStart'),emerg:g('eEmerg')};
+  const custom={}; store.customFields.forEach((f,i)=>{ const el=document.getElementById('ecf'+i); if(el&&el.value.trim()) custom[f.label]=el.value.trim(); });
+  const data={name,idno:g('eIdno'),store:+g('eStore'),dept:g('eDept'),title:g('eTitle'),type:g('eType'),base:+g('eBase')||0,role:g('eRole'),bank:g('eBank'),start:g('eStart'),emerg:g('eEmerg'),custom};
   if(id){ const e=EMP.find(x=>x.id===id); Object.assign(e,data); e.state=g('eState'); toast('員工「'+name+'」資料已儲存'); }
   else { const yr=new Date().getFullYear()-1911; const eid='E'+yr+'P'+String(nextSeq()).padStart(4,'0'); EMP.push({id:eid,...data,state:'在職'}); toast('新員工「'+name+'」已建檔，員編 '+eid); }
   save(); closeModal(); render(); };
@@ -601,38 +615,46 @@ window.clearShift=(name,d)=>{ delete store.shifts[shiftKey(name,d)]; save(); clo
 window.autoFill=()=>{ const roster=EMP.filter(e=>e.state!=='離職').map(e=>e.name); const pat=['早','早','中','晚','晚','休','休'];
   roster.forEach((name,i)=>{ for(let d=0;d<7;d++){ const k=pat[(d+i)%7]; const def=shiftDef(k); store.shifts[shiftKey(name,d)]={shift:k,start:def.start,end:def.end}; } }); save(); toast('已一鍵帶入預設輪班'); render(); };
 
-// D 業績回報
+// D 業績回報（員工送出→持久化→主管檢視+儀表板即時）
 PANELS.D=(me)=>{
   if(can('supervisor')){
-    const tot=SALES.reduce((s,r)=>s+r.amt,0), cost=SALES.reduce((s,r)=>s+r.food+r.labor+r.waste,0);
+    const S=store.sales;
+    const tot=S.reduce((s,r)=>s+r.amt,0), cost=S.reduce((s,r)=>s+r.food+r.labor+r.waste,0);
     return page('D','業績回報 · 管理者檢視','Sales & Cost Dashboard',`
     <div class="grid g4" style="margin-bottom:12px">
-      <div class="stat"><div class="k">今日總營業額</div><div class="v">${nt(tot)}</div></div>
+      <div class="stat"><div class="k">總營業額（即時）</div><div class="v">${nt(tot)}</div></div>
       <div class="stat"><div class="k">總成本</div><div class="v">${nt(cost)}</div></div>
-      <div class="stat"><div class="k">整體毛利率</div><div class="v" style="color:var(--brand)">${Math.round((tot-cost)/tot*100)}%</div></div>
-      <div class="stat"><div class="k">回報門市</div><div class="v">${SALES.length}<span style="font-size:14px">/4</span></div></div>
+      <div class="stat"><div class="k">整體毛利率</div><div class="v" style="color:var(--brand)">${tot?Math.round((tot-cost)/tot*100):0}%</div></div>
+      <div class="stat"><div class="k">回報筆數</div><div class="v">${S.length}</div></div>
     </div>
-    <div class="card"><h2>📊 各櫃位業績與成本結構 · 2026/06/15</h2>
-      <div class="tbl-wrap"><table><tr><th>櫃位</th><th class="num">營業額</th><th class="num">食材成本</th><th class="num">人事成本</th><th class="num">報廢</th><th class="num">毛利率</th></tr>
-      ${SALES.map(r=>{const m=Math.round((r.amt-r.food-r.labor-r.waste)/r.amt*100);return `<tr><td>${storeName(r.store)}</td><td class="num">${nt(r.amt)}</td><td class="num">${nt(r.food)}</td><td class="num">${nt(r.labor)}</td><td class="num">${nt(r.waste)}</td><td class="num"><span class="pill ${m>=40?'p-ok':m>=33?'p-hold':'p-warn'}">${m}%</span></td></tr>`;}).join('')}</table></div>
-      <p class="note" style="margin-top:12px">可下鑽到單店/單日/單品項。異常店（毛利偏低）一眼抓出，總部當日掌握營收與成本全貌。</p>
+    <div class="card"><h2>📊 各筆業績與成本結構（即時彙整）</h2>
+      <div class="tbl-wrap"><table><tr><th>櫃位</th><th>日期</th><th>回報人</th><th class="num">營業額</th><th class="num">食材</th><th class="num">人事</th><th class="num">報廢</th><th class="num">毛利率</th></tr>
+      ${S.map(r=>{const m=r.amt?Math.round((r.amt-r.food-r.labor-r.waste)/r.amt*100):0;return `<tr><td>${storeName(r.store)}</td><td>${r.date}</td><td>${r.by||'—'}</td><td class="num">${nt(r.amt)}</td><td class="num">${nt(r.food)}</td><td class="num">${nt(r.labor)}</td><td class="num">${nt(r.waste)}</td><td class="num"><span class="pill ${m>=40?'p-ok':m>=33?'p-hold':'p-warn'}">${m}%</span></td></tr>`;}).join('')}</table></div>
+      <p class="note" style="margin-top:12px">員工在手機端送出的每日業績即時進這裡，也同步到「數據儀表板」。異常店（毛利偏低）一眼抓出。</p>
     </div>`);
   }
   return page('D','業績回報','Daily Sales Report',`
-  <div class="card"><h2>🧾 每日業績回報（30 秒完成）</h2>
+  <div class="card"><h2>🧾 每日業績回報（送出即進雲端）</h2>
   <div class="phone"><div class="scr">
     <div class="between"><b>業績回報 · ${storeName(me.store)}</b><span class="pill p-hold">填寫中</span></div>
     <div class="card" style="margin-top:10px">
-      <div class="field"><label class="f">日期</label><input value="2026/06/15" readonly></div>
+      <div class="field"><label class="f">日期</label><input id="d_date" type="date" value="2026-07-06"></div>
       <div class="field"><label class="f">當日營業額</label><input id="d_amt" type="number" placeholder="38600"></div>
       <div class="field"><label class="f">來客數</label><input id="d_g" type="number" placeholder="142"></div>
-      <div class="field"><label class="f">當班工時</label><input id="d_h" type="number" placeholder="16"></div>
-      <button class="btn" style="width:100%" onclick="toast('（示範）業績已送出，總部即時可見')">送出回報</button>
+      <div class="field"><label class="f">食材成本</label><input id="d_food" type="number" placeholder="13900"></div>
+      <div class="field"><label class="f">人事成本</label><input id="d_labor" type="number" placeholder="6200"></div>
+      <div class="field"><label class="f">報廢損耗</label><input id="d_waste" type="number" placeholder="420"></div>
+      <button class="btn" style="width:100%" onclick="submitSales('${me.id}')">送出回報</button>
     </div>
   </div></div>
-  <p class="note" style="margin-top:12px">員工填當日營業額/來客/工時；資料即時進雲端，主管看得到成本毛利。（此模組即現有 liff-sales-report / 鴻海版的產品化。）</p>
+  <p class="note" style="margin-top:12px">員工填當日營業額/成本 → 送出即進雲端，主管檢視與儀表板即時更新（真的串接）。</p>
   </div>`);
 };
+window.submitSales=(empId)=>{ const e=EMP.find(x=>x.id===empId); const g=id=>+document.getElementById(id).value||0;
+  const amt=g('d_amt'); if(amt<=0){ toast('請輸入營業額'); return; }
+  const iso=document.getElementById('d_date').value; const date=iso?(+iso.slice(0,4)-1911)+'/'+iso.slice(5,7)+'/'+iso.slice(8,10):'—';
+  store.sales.unshift({store:e.store,date,amt,guests:g('d_g'),food:g('d_food'),labor:g('d_labor'),waste:g('d_waste'),by:e.name});
+  save(); toast('業績已送出，總部與儀表板即時可見'); render(); };
 
 // E 加班請假（真的送單 → 進 F 簽核佇列；核准回寫餘額）
 function leaveBal(empId){ if(!store.leaveBal[empId]) store.leaveBal[empId]={annual:56,comp:10}; return store.leaveBal[empId]; }
@@ -705,25 +727,32 @@ window.unapprove=(id)=>{ const a=store.approvals.find(x=>x.id===id); if(a.state=
 window.delApproval=(id)=>{ const a=store.approvals.find(x=>x.id===id); if(!confirm('確定刪除「'+a.who+' 的'+a.type+'」這筆紀錄？')) return; store.approvals=store.approvals.filter(x=>x.id!==id); save(); toast('已刪除該簽核紀錄'); render(); };
 
 // H 墊付款
+function myAdvances(empId){ return store.approvals.filter(a=>a.kind==='advance'&&a.empId===empId); }
+function approvedAdvance(empId){ return myAdvances(empId).filter(a=>a.state==='已核准').reduce((s,a)=>s+a.amt,0); }
 PANELS.H=(me)=>{
-  const mine=ADVANCES;
-  const owe=mine.filter(a=>a.state!=='已退').reduce((s,a)=>s+a.amt,0);
+  const mine=myAdvances(me.id);
+  const pending=mine.filter(a=>a.state==='待核').reduce((s,a)=>s+a.amt,0);
+  const approved=approvedAdvance(me.id);
   return page('H','墊付款','Advance Payment',`
   <div class="grid g2">
-    <div class="card"><h2>📸 登錄墊付款</h2>
-      <div class="field"><label class="f">項目</label><select class="fld"><option>叫貨現金墊付</option><option>店務雜支</option><option>計程車</option></select></div>
-      <div class="field"><label class="f">金額</label><input type="number" placeholder="1280"></div>
+    <div class="card"><h2>📸 登錄墊付款（送出即進主管簽核）</h2>
+      <div class="field"><label class="f">項目</label><select class="fld" id="h_item"><option>叫貨現金墊付</option><option>店務雜支</option><option>計程車</option><option>設備維修</option></select></div>
+      <div class="field"><label class="f">金額</label><input id="h_amt" type="number" placeholder="1280"></div>
       <div class="field"><label class="f">收據</label><button class="btn ghost" style="width:100%" onclick="toast('（示範）已拍照上傳收據')">📷 拍照上傳收據</button></div>
-      <button class="btn" style="width:100%" onclick="toast('（示範）墊付款已送出，待主管核可')">送出</button>
+      <button class="btn" style="width:100%" onclick="submitAdvance('${me.id}')">送出</button>
     </div>
     <div class="card"><h2>📋 我的墊付明細</h2>
-      <div class="tbl-wrap"><table><tr><th>日期</th><th>項目</th><th class="num">金額</th><th>狀態</th></tr>
-      ${mine.map(a=>`<tr><td>${a.date}</td><td>${a.item}</td><td class="num">${nt(a.amt)}</td><td><span class="pill ${a.state==='已核'?'p-ok':'p-hold'}">${a.state}</span></td></tr>`).join('')}</table></div>
-      <div class="between" style="margin-top:12px"><b>本月應還墊付</b><b style="color:var(--brand)">${nt(owe)}</b></div>
-      <p class="note" style="margin-top:10px">主管線上核可 → 核可金額<b>自動併入當月薪資撥款</b>，免另開現金。${can('supervisor')?'（你可在「考勤簽核」核可墊付款）':''}</p>
+      <div class="tbl-wrap"><table><tr><th>項目</th><th class="num">金額</th><th>狀態</th></tr>
+      ${mine.length?mine.map(a=>`<tr><td>${a.detail}</td><td class="num">${nt(a.amt)}</td><td><span class="pill ${a.state==='已核准'?'p-ok':a.state==='待核'?'p-hold':'p-warn'}">${a.state}</span></td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:14px">尚無墊付</td></tr>'}</table></div>
+      <div class="between" style="margin-top:12px"><span>待核 ${nt(pending)}</span><b style="color:var(--brand)">已核准併薪 ${nt(approved)}</b></div>
+      <p class="note" style="margin-top:10px">送出→進「考勤簽核」；主管核可後金額<b>自動併入薪資</b>（到「薪資計算」看實發＋一筆墊付款核銷）。</p>
     </div>
   </div>`);
 };
+window.submitAdvance=(empId)=>{ const e=EMP.find(x=>x.id===empId); const amt=+document.getElementById('h_amt').value||0; if(amt<=0){ toast('請輸入金額'); return; }
+  const item=document.getElementById('h_item').value;
+  store.approvals.push({id:nextSeq(),empId,who:e.name,store:e.store,type:'墊付款',detail:item,amt,state:'待核',kind:'advance'});
+  save(); toast('墊付款「'+item+' '+nt(amt)+'」已送出，待主管核可'); render(); };
 
 // G 考績獎金
 const GRADE_PT={A:100,'B+':85,B:75,C:60,D:40};
@@ -806,6 +835,9 @@ function calcPay(e){
     lines.push({name:i.name,type:i.type,val:v});
     if(i.type==='earn'){ earn+=v; if(i.tax) taxable+=v; if(i.insured) insured+=v; } else deduct+=v;
   });
+  // 墊付款核銷（加項，不課稅不計保）：已核准的墊付併入撥款
+  const adv=(typeof approvedAdvance==='function')?approvedAdvance(e.id):0;
+  if(adv>0){ earn+=adv; lines.push({name:'墊付款核銷',type:'earn',val:adv}); }
   // 福利金（扣項）
   if(store.payrollCfg.welfareFund>0){ deduct+=store.payrollCfg.welfareFund; lines.push({name:'員工福利金',type:'deduct',val:store.payrollCfg.welfareFund}); }
   // 二代健保補充保費（示範：獎金類超過投保額 4 倍才計，這裡簡化為對 suppl 項目課 2.11%）
@@ -972,16 +1004,20 @@ window.delPost=(id)=>{ if(!confirm('刪除此公告？')) return; store.posts=st
 // K 電子薪資條
 PANELS.K=(me)=>{
   if(!can('hr')){
-    return page('K','電子薪資條','Digital Payslip',`<div class="card"><h2>🔒 我的薪資條</h2>
+    const p=calcPay(me); const earns=p.lines.filter(l=>l.type==='earn'), deds=p.lines.filter(l=>l.type==='deduct');
+    return page('K','電子薪資條','Digital Payslip',`<div class="card"><h2>🔒 我的薪資條（與薪資計算同源·完整明細）</h2>
     <div class="phone"><div class="scr" style="background:#fff">
-      <div class="between"><b>薪資條 · 2026/06</b><span class="pill p-gray">🔒 加密</span></div>
+      <div class="between"><b>薪資條 · 2026/07</b><span class="pill p-gray">🔒 加密</span></div>
       <div class="card" style="margin:10px 0"><b>${me.name} · ${storeName(me.store)}</b>
-        <div class="between" style="margin-top:8px"><span>應發合計</span><b>${nt(49700)}</b></div>
-        <div class="between"><span>應扣合計</span><b style="color:var(--warn)">-$1,753</b></div>
-        <div class="between" style="border-top:1px solid var(--line);padding-top:6px;margin-top:6px"><b>實發</b><b style="color:var(--brand)">${nt(47947)}</b></div></div>
-      <div class="card"><div class="between"><span>本薪</span><span>$44,000</span></div><div class="between"><span>加班費</span><span>$1,200</span></div><div class="between"><span>績效獎金</span><span>$4,500</span></div></div>
+        <div class="between" style="margin-top:8px"><span>應發合計</span><b>${nt(p.earn)}</b></div>
+        <div class="between"><span>應扣合計</span><b style="color:var(--warn)">-${nt(p.deduct)}</b></div>
+        <div class="between" style="border-top:1px solid var(--line);padding-top:6px;margin-top:6px"><b>實發</b><b style="color:var(--brand)">${nt(p.net)}</b></div></div>
+      <div class="card"><div style="font-weight:700;color:var(--brand);font-size:12px;margin-bottom:4px">應發項目</div>
+        ${earns.map(l=>`<div class="between" style="font-size:13px"><span>${l.name}</span><span>${nt(l.val)}</span></div>`).join('')||'<div class="small">—</div>'}
+        <div style="font-weight:700;color:var(--warn);font-size:12px;margin:8px 0 4px">應扣項目</div>
+        ${deds.map(l=>`<div class="between" style="font-size:13px;color:var(--warn)"><span>${l.name}</span><span>-${nt(l.val)}</span></div>`).join('')||'<div class="small">—</div>'}</div>
     </div></div>
-    <p class="note" style="margin-top:12px">每月薪資條推播至 LINE，免紙本；明細加密僅本人可查；歷月雲端留存隨時調閱。</p></div>`);
+    <p class="note" style="margin-top:12px">完整逐項明細（含加給/獎金/墊付核銷/勞健保/補充保費/福利金）即時由薪資計算產出，金額一致；推播 LINE、加密僅本人可查。</p></div>`);
   }
   return page('K','電子薪資條','Digital Payslip',`<div class="card"><div class="between"><h2 style="margin:0">📤 薪資條發放</h2>
     <button class="btn sm" onclick="toast('（示範）已批次推播 '+EMP.filter(e=>e.state==='在職').length+' 份薪資條至員工 LINE')">批次推播全部</button></div>
@@ -997,7 +1033,7 @@ PANELS.L=(me)=>{
   const pays=active.map(calcPay);
   const avgWage=pays.length?Math.round(pays.reduce((s,p)=>s+p.earn,0)/pays.length):0;
   const totalLabor=pays.reduce((s,p)=>s+p.earn,0);
-  const totalRev=SALES.reduce((s,r)=>s+r.amt,0)*30;   // 以日營業額估月營收
+  const totalRev=store.sales.reduce((s,r)=>s+r.amt,0)*30;   // 由業績回報即時彙整·以日營業額估月營收
   const laborRate=totalRev?Math.round(totalLabor/totalRev*1000)/10:0;
   const pendApprovals=store.approvals.filter(a=>a.state==='待核').length;
   // 各店在職人數（真實）
@@ -1034,14 +1070,21 @@ PANELS.SET=(me)=>{
   return page('SET','系統設置','Settings（僅管理員）',`
   <div class="grid g2">
     <div class="card"><h2>🏢 租戶 / 公司設定</h2>
-      ${kv('租戶名稱',t.name)}${kv('綁定 LINE 官方帳號',t.line)}${kv('分店數',t.stores.length+' 家')}${kv('方案','企業版（多店）')}
-      <div class="row" style="margin-top:10px"><button class="btn sm ghost" onclick="toast('（示範）編輯公司資料')">編輯</button><button class="btn sm ghost" onclick="toast('（示範）重新綁定 LINE OA')">綁定 LINE</button></div>
-      <p class="note" style="margin-top:12px">每個租戶（客戶）資料完全隔離，綁自己的 LINE 官方帳號、自助開通。</p>
+      <div class="field"><label class="f">租戶名稱</label><input value="${t.name}" onchange="setTenant('name',this.value)"></div>
+      <div class="field"><label class="f">綁定 LINE 官方帳號</label><input value="${t.line}" onchange="setTenant('line',this.value)"></div>
+      <div class="row">${kv('分店數',t.stores.length+' 家')}${kv('方案','企業版（多店）')}</div>
+      <p class="note" style="margin-top:12px">每個租戶（客戶）資料完全隔離、綁自己的 LINE 官方帳號。改這裡即時生效並存檔。</p>
     </div>
-    <div class="card"><h2>🏬 分店管理</h2>
-      ${t.stores.map((s,i)=>`<div class="between" style="padding:6px 0;border-bottom:1px solid var(--line)"><span>${i+1}. ${s}</span><button class="btn sm ghost" onclick="toast('（示範）設定 ${s} 的 GPS 範圍/班別')">設定</button></div>`).join('')}
-      <button class="btn sm" style="margin-top:10px" onclick="toast('（示範）新增分店')">＋ 新增分店</button>
+    <div class="card"><div class="between"><h2 style="margin:0">🏬 分店管理</h2><button class="btn sm" onclick="addStore()">＋ 新增分店</button></div>
+      <div style="margin-top:10px">${t.stores.map((s,i)=>`<div class="between" style="padding:6px 0;border-bottom:1px solid var(--line)">
+        <input value="${s}" style="border:none;background:none;font-weight:600;flex:1" onchange="renameStore(${i},this.value)">
+        <div class="row"><button class="btn sm ghost" onclick="go('BSET')">GPS/班別</button>${t.stores.length>1?`<button class="btn sm warn" onclick="delStore(${i})">🗑</button>`:''}</div></div>`).join('')}</div>
+      <p class="note" style="margin-top:10px">新增/改名/刪除分店即時生效並存檔，套用到打卡 GPS、排班、業績、儀表板全系統。</p>
     </div>
+  </div>
+  <div class="card"><div class="between"><h2 style="margin:0">🧩 員工自訂欄位</h2><button class="btn sm" onclick="addCustomField()">＋ 新增欄位</button></div>
+    <div style="margin-top:10px">${store.customFields.length?store.customFields.map((f,i)=>`<div class="between" style="padding:6px 0;border-bottom:1px solid var(--line)"><input value="${f.label}" style="border:none;background:none;flex:1" onchange="renameField(${i},this.value)"><button class="btn sm warn" onclick="delField(${i})">🗑</button></div>`).join(''):'<div class="small" style="color:var(--muted)">尚無自訂欄位</div>'}</div>
+    <p class="note" style="margin-top:10px">客戶可自訂員工建檔要收的額外欄位（如制服尺寸、車牌）——新增後出現在「員工基本資料」的新增/編輯表單。</p>
   </div>
   <div class="card"><h2>🔐 角色權限矩陣（可自訂）</h2>
     <div class="tbl-wrap"><table class="matrix"><tr><th>模組 \\ 角色</th><th>員工</th><th>主管</th><th>人資</th><th>管理員</th></tr>
@@ -1056,6 +1099,15 @@ PANELS.SET=(me)=>{
     <p class="note" style="margin-top:12px">所有規則都做成「資料可設定」而非「程式寫死」——接新客戶不必改程式碼。</p>
   </div>`);
 };
+window.setTenant=(f,v)=>{ TENANTS[currentTenant][f]=v; store.tenantMeta[currentTenant]=store.tenantMeta[currentTenant]||{}; store.tenantMeta[currentTenant][f]=v; save();
+  if(f==='name'){ document.getElementById('tenantSel').options[[...document.getElementById('tenantSel').options].findIndex(o=>o.value===currentTenant)].text=v; } toast('租戶設定已更新'); };
+function persistStores(){ store.tenantStores[currentTenant]=TENANTS[currentTenant].stores.slice(); save(); }
+window.addStore=()=>{ TENANTS[currentTenant].stores.push('新分店 '+(TENANTS[currentTenant].stores.length+1)); persistStores(); toast('已新增分店'); render(); };
+window.renameStore=(i,v)=>{ TENANTS[currentTenant].stores[i]=v.trim()||TENANTS[currentTenant].stores[i]; persistStores(); toast('分店已改名'); };
+window.delStore=(i)=>{ if(TENANTS[currentTenant].stores.length<=1){ toast('至少保留一間'); return; } if(!confirm('刪除分店「'+TENANTS[currentTenant].stores[i]+'」？')) return; TENANTS[currentTenant].stores.splice(i,1); persistStores(); toast('已刪除分店'); render(); };
+window.addCustomField=()=>{ store.customFields.push({label:'新欄位'}); save(); toast('已新增自訂欄位'); render(); };
+window.renameField=(i,v)=>{ store.customFields[i].label=v.trim()||store.customFields[i].label; save(); };
+window.delField=(i)=>{ store.customFields.splice(i,1); save(); toast('已刪除欄位'); render(); };
 
 // ---------- 小工具 ----------
 function page(tag,name,en,inner){ return `<h1 class="pt"><span class="tag" style="width:30px;height:30px;font-size:15px">${tag}</span>${name} <span class="en">${en}</span></h1>${inner}`; }
