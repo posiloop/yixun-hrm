@@ -14,9 +14,10 @@
     --r:12px; --sh:0 1px 3px rgba(20,60,40,.08),0 1px 2px rgba(20,60,40,.06);
   }
   *{box-sizing:border-box}
-  html,body{margin:0;padding:0}
+  html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden}
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
     background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;-webkit-text-size-adjust:100%}
+  img,table{max-width:100%}
   .hidden{display:none!important}
   button{font:inherit;cursor:pointer}
   .app{display:flex;flex-direction:column;min-height:100vh}
@@ -133,7 +134,15 @@
     .scrim.show{display:block}
     .selctl label{display:none}
     .logo span.full{display:none}
+    .topbar{gap:6px;padding:8px}
+    .selctl{gap:2px;padding:3px 4px 3px 6px}
+    .selctl select{max-width:30vw;padding:5px 4px;font-size:12px}
+    .main{padding:12px 10px}
+    .g2,.g3,.g4{grid-template-columns:1fr}
+    .card{padding:13px}
+    h1.pt .en{width:100%}
   }
+  @media(max-width:400px){ .selctl select{max-width:27vw} .logo .leaf{display:none} }
 </style>
 </head>
 <body>
@@ -342,6 +351,8 @@ function save(){ localStorage.setItem(LS,JSON.stringify(store)); }
 function nextSeq(){ return ++store.seq; }
 
 let currentTenant=store.tenant, currentRole=store.role, currentMod='home';
+let rosterFilter={status:'active',dept:'',type:''};
+window.setFilter=(k,v)=>{ rosterFilter[k]=v; render(); };
 
 // ---------- UI helpers ----------
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),1900); }
@@ -433,17 +444,34 @@ function dot(y){ return y?'<span class="dot y" title="可"></span>':'<span class
 // A 員工基本資料
 PANELS.A=(me)=>{
   if(!can('hr')){ // 員工只看自己
+    const em=me.emergObj||{};
     return page('A','員工基本資料','Employee Profile',`
     <div class="card"><h2>👤 我的資料</h2>
     <div class="grid g2">
       ${kv('姓名',me.name)}${kv('員工編號',me.id)}${kv('分店',storeName(me.store))}${kv('部門 / 職稱',me.dept+' / '+me.title)}
-      ${kv('僱用型態',me.type)}${kv('到職日',me.start)}${kv('薪轉帳戶',me.bank)}${kv('狀態','<span class="pill p-ok">'+me.state+'</span>')}
+      ${kv('僱用型態',me.type)}${kv('到職日',me.start)}${kv('年資',seniority(me))}${kv('薪轉帳戶',me.bank)}
+      ${kv('聯絡電話',me.phone||'—')}${kv('Email',me.email||'—')}
     </div>
+    ${(em.name||me.addr)?`<div style="font-size:12px;font-weight:700;color:var(--brand);margin:8px 0 4px">聯絡 / 緊急聯絡</div><div class="grid g2">${kv('通訊地址',me.addr||'—')}${kv('緊急聯絡人',em.name?(em.name+'（'+(em.rel||'—')+'）'+(em.phone||'')):'—')}</div>`:''}
     <p class="note" style="margin-top:12px">員工僅能檢視本人資料。個資修改需送人資審核（分級權限）。</p></div>`);
   }
-  const rows=EMP.map(e=>`<tr><td>${e.id}</td><td>${e.name}</td><td>${storeName(e.store)}</td><td>${e.title}</td><td>${e.type}</td>
-    <td><span class="pill ${e.state==='在職'?'p-ok':e.state==='留停'?'p-hold':'p-gray'}">${e.state}</span></td>
-    <td><div class="row"><button class="btn sm ghost" onclick="empEdit('${e.id}')">編輯</button>${e.role==='admin'?'':`<button class="btn sm warn" onclick="empLeave('${e.id}')" title="辦理離職封存">離職</button>`}</div></td></tr>`).join('');
+  const rf=rosterFilter; const depts=[...new Set(EMP.map(e=>e.dept))];
+  const filtered=EMP.filter(e=>{
+    if(rf.status==='active'&&e.state==='離職') return false;
+    if(rf.status==='onduty'&&e.state!=='在職') return false;
+    if(rf.status==='left'&&e.state!=='離職') return false;
+    if(rf.status==='hold'&&e.state!=='留停') return false;
+    if(rf.dept&&e.dept!==rf.dept) return false;
+    if(rf.type&&e.type!==rf.type) return false;
+    return true; });
+  const rows=filtered.map(e=>`<tr><td>${e.id}</td><td>${e.name}</td><td>${storeName(e.store)}</td><td>${e.title}</td><td>${e.type}</td><td>${seniority(e)}</td>
+    <td><span class="pill ${e.state==='在職'?'p-ok':e.state==='留停'?'p-hold':'p-gray'}">${e.state}${e.state==='離職'&&e.leaveDate?' '+e.leaveDate.slice(5):''}</span></td>
+    <td><div class="row"><button class="btn sm ghost" onclick="empEdit('${e.id}')">編輯</button>${e.role==='admin'?'':e.state==='離職'?`<button class="btn sm warn" onclick="empDelete('${e.id}')">刪除</button>`:`<button class="btn sm warn" onclick="empLeave('${e.id}')" title="辦理離職封存">離職</button>`}</div></td></tr>`).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:16px">無符合篩選的員工</td></tr>';
+  const filterBar=`<div class="row" style="margin:10px 0;gap:8px">
+    <select class="fld" style="width:auto" onchange="setFilter('status',this.value)">${[['active','在職+留停'],['onduty','僅在職'],['hold','僅留停'],['left','僅離職'],['all','全部']].map(o=>`<option value="${o[0]}" ${rf.status===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>
+    <select class="fld" style="width:auto" onchange="setFilter('dept',this.value)"><option value="">全部部門</option>${depts.map(d=>`<option ${rf.dept===d?'selected':''}>${d}</option>`).join('')}</select>
+    <select class="fld" style="width:auto" onchange="setFilter('type',this.value)"><option value="">全部型態</option>${['正職','兼職','約聘'].map(t=>`<option ${rf.type===t?'selected':''}>${t}</option>`).join('')}</select>
+    <span class="pill p-info">${filtered.length} 人</span></div>`;
   const pend=store.pendingEmps;
   const pendCard=pend.length?`<div class="card" style="border-color:var(--amber)"><h2>🆕 新員工報到 · 待審核（${pend.length}）</h2>
     <div class="tbl-wrap"><table><tr><th>姓名</th><th>分店</th><th>職稱</th><th>型態</th><th>到職日</th><th style="min-width:130px"></th></tr>
@@ -453,38 +481,85 @@ PANELS.A=(me)=>{
   return page('A','員工基本資料','Employee Profile',pendCard+`
     <div class="card"><div class="between"><h2 style="margin:0">📇 員工名冊（${EMP.filter(e=>e.state!=='離職').length} 在職 / ${EMP.length} 總）</h2>
       <div class="row"><button class="btn sm ghost" onclick="exportCSV('roster')">匯出 CSV</button><button class="btn sm ghost" onclick="onboardForm()">🔗 報到表單</button><button class="btn sm" onclick="empEdit(null)">＋ 新增員工</button></div></div>
-      <div class="tbl-wrap" style="margin-top:12px"><table>
-      <tr><th>員編</th><th>姓名</th><th>分店</th><th>職稱</th><th>型態</th><th>狀態</th><th style="min-width:130px">操作</th></tr>${rows}</table></div>
-      <p class="note" style="margin-top:12px">一處建檔全系統共用：新增自動生成員編、可編輯完整欄位、離職自動封存。人資可新增/編輯。</p>
+      ${filterBar}
+      <div class="tbl-wrap"><table>
+      <tr><th>員編</th><th>姓名</th><th>分店</th><th>職稱</th><th>型態</th><th>年資</th><th>狀態</th><th style="min-width:130px">操作</th></tr>${rows}</table></div>
+      <p class="note" style="margin-top:12px">可按狀態/部門/型態篩選；年資由到職日自動算（可在編輯裡調整）。編輯內含完整聯絡/緊急聯絡/薪資結構/投保級距/稅務單位/請假規則。離職用「離職封存」、誤建未報到用「刪除」。</p>
     </div>`);
 };
-window.empEdit=(id)=>{ const e=id?EMP.find(x=>x.id===id):{name:'',store:0,dept:'門市',title:'',type:'正職',role:'employee',base:0,bank:'',state:'在職',start:'2026-07-05',emerg:'',idno:''};
-  const stores=TENANTS[currentTenant].stores;
-  modal((id?'編輯':'新增')+'員工資料',`
+const INS_BR_OPTS=INS_BR;
+window.empEdit=(id)=>{ const e=id?EMP.find(x=>x.id===id):{name:'',store:0,dept:'門市',title:'',type:'正職',role:'employee',base:0,bank:'',state:'在職',start:'2026-07-05',idno:''};
+  const stores=TENANTS[currentTenant].stores; const em=e.emergObj||{};
+  const F=(k,d)=>e[k]!==undefined?e[k]:(d||'');
+  modal((id?'編輯 · '+e.name:'新增員工資料'),`
+  <div style="font-size:12px;font-weight:700;color:var(--brand);margin-bottom:6px">基本</div>
   <div class="grid g2">
-    <div class="field"><label class="f">姓名 *</label><input id="eName" value="${e.name}"></div>
-    <div class="field"><label class="f">身分證字號</label><input id="eIdno" value="${e.idno||''}" placeholder="A123456789"></div>
+    <div class="field"><label class="f">姓名 *</label><input id="eName" value="${F('name')}"></div>
+    <div class="field"><label class="f">工號${id?'（可修改）':'（自動生成）'}</label><input id="eId" value="${id?e.id:''}" ${id?'':'placeholder="核准後自動" disabled'}></div>
+    <div class="field"><label class="f">身分證字號</label><input id="eIdno" value="${F('idno')}" placeholder="A123456789"></div>
     <div class="field"><label class="f">分店</label><select class="fld" id="eStore">${stores.map((s,i)=>`<option value="${i}" ${e.store===i?'selected':''}>${s}</option>`).join('')}</select></div>
-    <div class="field"><label class="f">部門</label><input id="eDept" value="${e.dept}"></div>
-    <div class="field"><label class="f">職稱</label><input id="eTitle" value="${e.title}"></div>
+    <div class="field"><label class="f">部門</label><input id="eDept" value="${F('dept')}"></div>
+    <div class="field"><label class="f">職稱</label><input id="eTitle" value="${F('title')}"></div>
     <div class="field"><label class="f">僱用型態</label><select class="fld" id="eType"><option ${e.type==='正職'?'selected':''}>正職</option><option ${e.type==='兼職'?'selected':''}>兼職</option><option ${e.type==='約聘'?'selected':''}>約聘</option></select></div>
-    <div class="field"><label class="f">${e.type==='兼職'?'時薪':'月薪'}</label><input id="eBase" type="number" value="${e.base}"></div>
     <div class="field"><label class="f">系統角色</label><select class="fld" id="eRole">${Object.entries(ROLES).map(([k,v])=>`<option value="${k}" ${e.role===k?'selected':''}>${v.name}</option>`).join('')}</select></div>
-    <div class="field"><label class="f">薪轉帳戶</label><input id="eBank" value="${e.bank}"></div>
-    <div class="field"><label class="f">到職日</label><input id="eStart" type="date" value="${e.start}"></div>
-    <div class="field" style="grid-column:1/-1"><label class="f">緊急聯絡人</label><input id="eEmerg" value="${e.emerg||''}" placeholder="姓名 / 關係 / 電話"></div>
-    ${store.customFields.map((f,i)=>`<div class="field"><label class="f">${f.label}</label><input id="ecf${i}" value="${(e.custom&&e.custom[f.label])||''}"></div>`).join('')}
-    ${id?`<div class="field"><label class="f">狀態</label><select class="fld" id="eState"><option ${e.state==='在職'?'selected':''}>在職</option><option ${e.state==='留停'?'selected':''}>留停</option><option ${e.state==='離職'?'selected':''}>離職</option></select></div>`:''}
   </div>
-  <div class="row" style="margin-top:8px"><button class="btn" onclick="empSave(${id?`'${id}'`:'null'})">${id?'儲存':'建檔'}</button><button class="btn ghost" onclick="closeModal()">取消</button></div>`); };
+  <div style="font-size:12px;font-weight:700;color:var(--brand);margin:10px 0 6px">聯絡資料</div>
+  <div class="grid g2">
+    <div class="field"><label class="f">聯絡電話</label><input id="ePhone" value="${F('phone')}" placeholder="09xx-xxx-xxx"></div>
+    <div class="field"><label class="f">Email</label><input id="eEmail" value="${F('email')}"></div>
+    <div class="field" style="grid-column:1/-1"><label class="f">通訊地址</label><input id="eAddr" value="${F('addr')}"></div>
+  </div>
+  <div style="font-size:12px;font-weight:700;color:var(--brand);margin:10px 0 6px">緊急聯絡人</div>
+  <div class="grid g3">
+    <div class="field"><label class="f">姓名</label><input id="eEmName" value="${em.name||''}"></div>
+    <div class="field"><label class="f">關係</label><input id="eEmRel" value="${em.rel||''}" placeholder="父/母/配偶"></div>
+    <div class="field"><label class="f">電話</label><input id="eEmPhone" value="${em.phone||''}"></div>
+  </div>
+  <div style="font-size:12px;font-weight:700;color:var(--brand);margin:10px 0 6px">任職 · 年資</div>
+  <div class="grid g2">
+    <div class="field"><label class="f">到職日</label><input id="eStart" type="date" value="${F('start','2026-07-05')}"></div>
+    <div class="field"><label class="f">年資</label><input value="${seniority(e)}" readonly style="background:var(--brand-ll)"></div>
+    <div class="field"><label class="f">年資調整（月，±）</label><input id="eSenAdj" type="number" value="${F('seniorityAdj',0)}"></div>
+    <div class="field"><label class="f">適用請假規則</label><select class="fld" id="eLeavePol">${['全職預設','兼職簡化','主管加給','自訂'].map(o=>`<option ${e.leavePol===o?'selected':''}>${o}</option>`).join('')}</select></div>
+    <div class="field"><label class="f">適用行事曆</label><select class="fld" id="eCal">${['台灣國定行事曆','門市排班制','總部辦公制'].map(o=>`<option ${e.calendar===o?'selected':''}>${o}</option>`).join('')}</select></div>
+    ${id?`<div class="field"><label class="f">狀態</label><select class="fld" id="eState" onchange="document.getElementById('leaveDateRow').style.display=this.value==='離職'?'block':'none'"><option ${e.state==='在職'?'selected':''}>在職</option><option ${e.state==='留停'?'selected':''}>留停</option><option ${e.state==='離職'?'selected':''}>離職</option></select></div>`:''}
+    <div class="field" id="leaveDateRow" style="display:${e.state==='離職'?'block':'none'}"><label class="f">離職日期</label><input id="eLeaveDate" type="date" value="${F('leaveDate')}"></div>
+  </div>
+  <div style="font-size:12px;font-weight:700;color:var(--brand);margin:10px 0 6px">薪資結構 · 保險 · 稅務</div>
+  <div class="grid g2">
+    <div class="field"><label class="f">${e.type==='兼職'?'時薪':'月薪（本薪）'}</label><input id="eBase" type="number" value="${F('base',0)}"></div>
+    <div class="field"><label class="f">薪轉帳戶</label><input id="eBank" value="${F('bank')}"></div>
+    <div class="field"><label class="f">投保級距</label><select class="fld" id="eInsBr"><option value="">自動（依薪資）</option>${INS_BR_OPTS.map(b=>`<option value="${b}" ${e.insBr===b?'selected':''}>${nt(b)}</option>`).join('')}</select></div>
+    <div class="field"><label class="f">所得稅申報單位</label><input id="eTaxUnit" value="${F('taxUnit',store.insCfg.unitName)}"></div>
+  </div>
+  ${store.customFields.length?`<div style="font-size:12px;font-weight:700;color:var(--brand);margin:10px 0 6px">自訂欄位</div><div class="grid g2">${store.customFields.map((f,i)=>`<div class="field"><label class="f">${f.label}</label><input id="ecf${i}" value="${(e.custom&&e.custom[f.label])||''}"></div>`).join('')}</div>`:''}
+  <div class="between" style="margin-top:12px"><div class="row"><button class="btn" onclick="empSave(${id?`'${id}'`:'null'})">${id?'儲存':'建檔'}</button><button class="btn ghost" onclick="closeModal()">取消</button></div>
+    ${id&&e.role!=='admin'?`<button class="btn sm warn" onclick="empDelete('${e.id}')" title="永久刪除（誤建/未報到用）">🗑 刪除此員工</button>`:''}</div>`); };
 window.empSave=(id)=>{ const name=document.getElementById('eName').value.trim(); if(!name){ toast('請輸入姓名'); return; }
-  const g=fid=>document.getElementById(fid).value;
+  const g=fid=>{ const el=document.getElementById(fid); return el?el.value:''; };
   const custom={}; store.customFields.forEach((f,i)=>{ const el=document.getElementById('ecf'+i); if(el&&el.value.trim()) custom[f.label]=el.value.trim(); });
-  const data={name,idno:g('eIdno'),store:+g('eStore'),dept:g('eDept'),title:g('eTitle'),type:g('eType'),base:+g('eBase')||0,role:g('eRole'),bank:g('eBank'),start:g('eStart'),emerg:g('eEmerg'),custom};
-  if(id){ const e=EMP.find(x=>x.id===id); Object.assign(e,data); e.state=g('eState'); toast('員工「'+name+'」資料已儲存'); }
+  const data={name,idno:g('eIdno'),store:+g('eStore'),dept:g('eDept'),title:g('eTitle'),type:g('eType'),base:+g('eBase')||0,role:g('eRole'),bank:g('eBank'),start:g('eStart'),
+    phone:g('ePhone'),email:g('eEmail'),addr:g('eAddr'),emergObj:{name:g('eEmName'),rel:g('eEmRel'),phone:g('eEmPhone')},
+    seniorityAdj:+g('eSenAdj')||0,leavePol:g('eLeavePol'),calendar:g('eCal'),insBr:g('eInsBr')?+g('eInsBr'):null,taxUnit:g('eTaxUnit'),custom};
+  if(id){ const e=EMP.find(x=>x.id===id); const newId=g('eId').trim();
+    if(newId&&newId!==id){ if(!empRenameId(id,newId)) return; id=newId; }
+    Object.assign(e,data); e.state=g('eState'); if(e.state==='離職') e.leaveDate=g('eLeaveDate')||e.leaveDate||'2026-07-05'; else e.leaveDate=null;
+    toast('員工「'+name+'」資料已儲存'); }
   else { const yr=new Date().getFullYear()-1911; const eid='E'+yr+'P'+String(nextSeq()).padStart(4,'0'); EMP.push({id:eid,...data,state:'在職'}); toast('新員工「'+name+'」已建檔，員編 '+eid); }
   save(); closeModal(); render(); };
-window.empLeave=(id)=>{ const e=EMP.find(x=>x.id===id); if(!confirm('辦理「'+e.name+'」離職封存？（自動退保、結算年資特休）')) return; e.state='離職'; delete store.deptMap[id]; save(); toast(e.name+' 已離職封存'); render(); };
+window.empDelete=(id)=>{ const e=EMP.find(x=>x.id===id); if(!confirm('永久刪除「'+e.name+'」及其所有連帶資料？此動作不可復原（誤建/未報到才用；正常離職請用「離職封存」）')) return; empHardDelete(id); closeModal(); toast('已永久刪除'); render(); };
+window.empLeave=(id)=>{ const e=EMP.find(x=>x.id===id); if(!confirm('辦理「'+e.name+'」離職封存？（自動退保、結算年資特休）')) return; e.state='離職'; e.leaveDate=e.leaveDate||'2026-07-05'; delete store.deptMap[id]; save(); toast(e.name+' 已離職封存'); render(); };
+// 年資（由到職日 + 手動調整月數）
+function seniority(e){ if(!e.start) return '—'; const s=new Date(e.start), n=new Date(2026,6,5); let mo=(n.getFullYear()-s.getFullYear())*12+(n.getMonth()-s.getMonth()); mo+=(+e.seniorityAdj||0); if(mo<0)mo=0; return Math.floor(mo/12)+'年'+(mo%12)+'月'; }
+// 硬刪除員工（誤建/未報到用）+ 連帶清理
+function empHardDelete(id){ const e=EMP.find(x=>x.id===id); if(!e) return;
+  const idx=EMP.indexOf(e); EMP.splice(idx,1);
+  delete store.deptMap[id]; delete store.leaveBal[id]; delete store.scores[id]; delete store.bonus[id]; delete store.attendance[id];
+  store.approvals=store.approvals.filter(a=>a.empId!==id); save(); }
+// 修改工號（連帶更新所有以工號為 key 的資料）
+function empRenameId(oldId,newId){ const e=EMP.find(x=>x.id===oldId); if(!e) return false; if(EMP.some(x=>x.id===newId&&x!==e)){ toast('工號已存在'); return false; }
+  e.id=newId; ['deptMap','leaveBal','scores','bonus','attendance'].forEach(k=>{ if(store[k][oldId]!==undefined){ store[k][newId]=store[k][oldId]; delete store[k][oldId]; } });
+  store.approvals.forEach(a=>{ if(a.empId===oldId) a.empId=newId; }); return true; }
 // 新員工報到自填表單（模擬 LINE 內員工自助報到）
 window.onboardForm=()=>{ const stores=TENANTS[currentTenant].stores;
   modal('🔗 新員工報到表單（員工自填）',`
@@ -870,7 +945,7 @@ window.setInsUnit=(f,v)=>{ store.insCfg[f]=v; save(); toast('投保單位已更�
 function roundBy(v){ const m=store.payrollCfg.rounding; return m==='floor'?Math.floor(v):m==='ceil'?Math.ceil(v):Math.round(v); }
 function calcPay(e){
   const base=e.type==='兼職'?e.base*160:e.base;   // 兼職以 160h 估
-  const br=bracket(base); const ic=store.insCfg;
+  const br=e.insBr||bracket(base); const ic=store.insCfg;   // 可用員工個別投保級距覆寫
   const li=ic.labor.on?roundBy(br*ic.labor.rate*0.2):0;   // 勞保自付約 20%
   const hi=ic.health.on?roundBy(br*ic.health.rate*0.3):0; // 健保自付約 30%
   let earn=0, deduct=0, taxable=0, insured=0; const lines=[];
