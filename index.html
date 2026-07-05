@@ -228,8 +228,9 @@ function permEffective(role,modKey){ const ov=store.perm[role]&&store.perm[role]
 
 // ---------- 多租戶 + 虛構餐飲資料 ----------
 const TENANTS={
-  yixun:{name:'益循生活（示範）', line:'@yixun-hrm', stores:['台北忠孝店','台中一中店','高雄夢時代店','新竹科技廠櫃']},
+  yixun:{name:'益循生活（示範·滿載）', line:'@yixun-hrm', stores:['台北忠孝店','台中一中店','高雄夢時代店','新竹科技廠櫃']},
   demo2:{name:'順口鹽酥雞（示範）', line:'@shunkou', stores:['板橋文化店','三重重新店']},
+  blank:{name:'✨ 新租戶（空白·模擬剛購買）', line:'', stores:[]},
 };
 const LEAVE_TYPES=[
   {k:'annual',name:'特休',on:true,quota:'週年制',pay:'全薪'},
@@ -254,8 +255,9 @@ const SEED_EMP=[
   {id:'A23001',name:'周建國',store:0,dept:'總部',title:'營運總監',type:'正職',role:'admin',base:78000,bank:'兆豐 0090011223344',state:'在職',start:'2023-01-16'},
   {id:'E26P0333',name:'黃品瑄',store:0,dept:'門市',title:'外場',type:'兼職',role:'employee',base:190,bank:'玉山 0123999888777',state:'在職',start:'2026-04-27'},
 ];
-function meFor(role){ // 每個角色對應一個 demo 使用者
-  return EMP.find(e=>e.role===role) || EMP[0];
+function meFor(role){ // 每個角色對應一個使用者；空白租戶用合成帳號（可先以管理員身分建置）
+  return EMP.find(e=>e.role===role) || EMP[0] ||
+    {id:'—',name:(role==='admin'?'系統管理員':'（尚未建檔）'),store:0,dept:'—',title:ROLES[role].name,type:'—',role,base:0,bank:'',state:'在職',start:'2026-07-05',emergObj:{}};
 }
 let EMP;   // 由 store 載入（可新增/編輯/持久化）；見 store 初始化
 
@@ -275,85 +277,12 @@ let ADVANCES=[
   {who:'王大明',date:'06/03',item:'叫貨現金墊付',amt:1280,state:'已核'},
   {who:'王大明',date:'06/12',item:'店務雜支',amt:540,state:'待核'},
 ];
-const LS='hrm_demo_state_v3';
-let store=JSON.parse(localStorage.getItem(LS)||'null')||{tenant:'yixun',role:'employee',clock:{},leaveCfg:{},punch:[]};
-LEAVE_TYPES.forEach(l=>{ if(store.leaveCfg[l.k]===undefined) store.leaveCfg[l.k]=l.on; });
-// 員工主檔（可新增/編輯/持久化）
-if(!store.emps) store.emps=SEED_EMP.map(e=>({...e}));
-EMP=store.emps;
-// 班別定義（可設置：名稱/時間/顏色）
-if(!store.shiftDefs) store.shiftDefs=[
-  {k:'早',start:'08:00',end:'16:00',c:'p-ok'},
-  {k:'中',start:'11:00',end:'19:00',c:'p-hold'},
-  {k:'晚',start:'14:00',end:'22:00',c:'p-info'},
-  {k:'休',start:'',end:'',c:'p-gray'},
-];
-// 打卡設置：基本規則 + 依部門 GPS（連動部門管理）
-if(!store.punchCfg) store.punchCfg={ method:'GPS', allowOutside:false, needPhoto:false, roundTo:1, dept:{} };
-// 依部門的 GPS 設定：deptId → {lat,lng,radius(m)}
-store.depts && store.depts.forEach(d=>{ if(store.punchCfg.dept[d.id]===undefined) store.punchCfg.dept[d.id]={lat:'',lng:'',radius:200,on:false}; });
-// 考勤規則設置
-if(!store.attendCfg) store.attendCfg={ flex:true, flexMin:30, lateGrace:5, lateDeduct:'per-min', earlyLeaveRule:'deduct', otThreshold:8, ot1:1.34, ot2:1.67, ot3:2.67, breakAuto:1 };
-// 保險設置：投保單位身分 + 各項目
-if(!store.insCfg) store.insCfg={ unitName:'益循生活股份有限公司', unitNo:'12345678', labor:{on:true,rate:0.11}, emp:{on:true,rate:0.01}, occ:{on:true,rate:0.0011}, pension:{on:true,rate:0.06}, health:{on:true,rate:0.0517}, suppl:{on:true,rate:0.0211} };
-// 薪資細節總設定
-if(!store.payrollCfg) store.payrollCfg={ rounding:'round', supplPremium:true, welfareFund:200, taxWithhold:true };
-// 持久化交易資料（真的會存、操作真的生效）
-if(!store.approvals) store.approvals=APPROVALS.map(a=>({...a}));
-if(!store.advances) store.advances=ADVANCES.map(a=>({...a}));
-// 部門（樹狀：parent 指向上層 id；head=主管員編）
-if(!store.depts) store.depts=[
-  {id:'D0',name:'益循生活總部',parent:null,head:'A23001'},
-  {id:'D1',name:'營運部',parent:'D0',head:'A23001'},
-  {id:'D2',name:'人資行政部',parent:'D0',head:'H24001'},
-  {id:'D3',name:'台北忠孝店',parent:'D1',head:'E25P0455'},
-  {id:'D4',name:'台中一中店',parent:'D1',head:'E26K0129'},
-  {id:'D5',name:'門市組',parent:'D3',head:'E25P0455'},
-  {id:'D6',name:'廚務組',parent:'D3',head:null},
-];
-if(!store.deptMap) store.deptMap={E26P0312:'D5',E25P0455:'D3',E26K0129:'D4',E25T0820:'D1',H24001:'D2',A23001:'D0',E26P0333:'D5'};
-// 布告欄
-if(!store.posts) store.posts=[
-  {id:1,title:'7月排班注意事項',body:'颱風季來臨，各店請確認緊急聯絡與代班機制。',by:'李文華',role:'hr',date:'2026/07/03',pin:true},
-  {id:2,title:'新版電子薪資條上線',body:'7 月起薪資條改由 LINE 推播，請員工確認已加官方帳號。',by:'周建國',role:'admin',date:'2026/07/01',pin:false},
-];
-if(store.seq===undefined) store.seq=100;
-// 假別餘額（每員工，小時）
-if(!store.leaveBal) store.leaveBal={};
-// 考核項目（可自訂項目與權重）
-if(!store.apprItems) store.apprItems=[
-  {id:'ap1',name:'出勤狀況',weight:20},
-  {id:'ap2',name:'出餐/清消表現',weight:30},
-  {id:'ap3',name:'客訴處理',weight:20},
-  {id:'ap4',name:'工作態度',weight:30},
-];
-// 考核分數 {empId:{itemId:grade}}；獎金 {empId:amount}
-if(!store.scores) store.scores={};
-if(!store.bonus) store.bonus={};
-// 租戶 分店/名稱 覆寫（可持久化編輯）+ 自訂員工欄位
-if(store.tenantStores){ Object.keys(store.tenantStores).forEach(k=>{ if(TENANTS[k]) TENANTS[k].stores=store.tenantStores[k]; }); }
-else { store.tenantStores={}; Object.keys(TENANTS).forEach(k=>store.tenantStores[k]=TENANTS[k].stores.slice()); }
-if(store.tenantMeta){ Object.keys(store.tenantMeta).forEach(k=>{ if(TENANTS[k]) Object.assign(TENANTS[k],store.tenantMeta[k]); }); }
-else store.tenantMeta={};
-if(!store.customFields) store.customFields=[{label:'制服尺寸'},{label:'車牌號碼'}];
-// 新員工報到待審
-if(!store.pendingEmps) store.pendingEmps=[
-  {tmp:'p1',name:'吳承恩',idno:'F131******',store:0,dept:'門市',title:'外場',type:'兼職',base:190,bank:'台新 8801****321',start:'2026-07-08',emerg:'吳母 / 母 / 09xx',custom:{}},
-];
-// 本月考勤彙總（由排班/打卡衍生，示範性種入）
-if(!store.attendance) store.attendance={};
-// 角色×模組 權限矩陣（真的控制導覽/存取）；預設依角色階級
-if(!store.perm){ store.perm={}; ['employee','supervisor','hr','admin'].forEach(r=>{ store.perm[r]={}; }); }
-// 業績回報紀錄（可持久化新增）
-if(!store.sales) store.sales=[
-  {store:0,date:'2026/07/05',amt:38600,guests:142,food:13900,labor:6200,waste:420,by:'王大明'},
-  {store:3,date:'2026/07/05',amt:31250,guests:118,food:12100,labor:5800,waste:610,by:'—'},
-  {store:1,date:'2026/07/05',amt:22400,guests:95,food:9700,labor:5500,waste:1180,by:'陳美惠'},
-];
-// 排班（key: 員工名_週幾index → {shift,start,end}）
-if(!store.shifts) store.shifts={};
-// 薪資項目設定（可自訂加給/扣項 + 細節旗標：課稅/平均時薪/投保薪資/進位/補充保費）
-if(!store.payItems) store.payItems=[
+const LS='hrm_demo_state_v10';
+// 每租戶獨立的資料鍵（切換租戶只看該租戶資料）
+const TENANT_KEYS=['emps','depts','deptMap','sales','approvals','shifts','leaveBal','scores','bonus','attendance','pendingEmps','posts','payItems','shiftDefs','apprItems','punchCfg','attendCfg','insCfg','payrollCfg','leaveCfg','customFields','perm','clock'];
+function freshLeaveCfg(){ const o={}; LEAVE_TYPES.forEach(l=>o[l.k]=l.on); return o; }
+function freshPerm(){ const p={}; ['employee','supervisor','hr','admin'].forEach(r=>p[r]={}); return p; }
+function defaultPayItems(){ return [
   {id:'pi1',name:'本薪',type:'earn',mode:'base',val:0,on:true,sys:true,tax:true,avgWage:true,insured:true,round:'round',suppl:false},
   {id:'pi2',name:'加班費',type:'earn',mode:'auto',val:0,on:true,sys:true,tax:true,avgWage:false,insured:false,round:'round',suppl:true},
   {id:'pi3',name:'全勤獎金',type:'earn',mode:'fixed',val:2000,on:true,tax:true,avgWage:true,insured:true,round:'round',suppl:true},
@@ -363,11 +292,51 @@ if(!store.payItems) store.payItems=[
   {id:'pi6',name:'勞保自付',type:'deduct',mode:'insurance',val:0,on:true,sys:true},
   {id:'pi7',name:'健保自付',type:'deduct',mode:'insurance',val:0,on:true,sys:true},
   {id:'pi8',name:'遲到扣款',type:'deduct',mode:'fixed',val:0,on:true,tax:false,avgWage:false,insured:false,round:'floor',suppl:false},
-];
-function save(){ localStorage.setItem(LS,JSON.stringify(store)); }
+]; }
+// 一個租戶的預設資料（新客戶剛購買：設定齊全但無員工/部門/紀錄）
+function defaultTenantData(){ return {
+  emps:[], depts:[], deptMap:{}, sales:[], approvals:[], shifts:{}, leaveBal:{}, scores:{}, bonus:{}, attendance:{}, pendingEmps:[], posts:[], clock:{},
+  leaveCfg:freshLeaveCfg(), perm:freshPerm(), customFields:[{label:'制服尺寸'},{label:'車牌號碼'}],
+  shiftDefs:[{k:'早',start:'08:00',end:'16:00',c:'p-ok'},{k:'中',start:'11:00',end:'19:00',c:'p-hold'},{k:'晚',start:'14:00',end:'22:00',c:'p-info'},{k:'休',start:'',end:'',c:'p-gray'}],
+  punchCfg:{method:'GPS',allowOutside:false,needPhoto:false,roundTo:1,dept:{}},
+  attendCfg:{flex:true,flexMin:30,lateGrace:5,lateDeduct:'per-min',earlyLeaveRule:'deduct',otThreshold:8,ot1:1.34,ot2:1.67,ot3:2.67,breakAuto:1},
+  insCfg:{unitName:'',unitNo:'',labor:{on:true,rate:0.11},emp:{on:true,rate:0.01},occ:{on:true,rate:0.0011},pension:{on:true,rate:0.06},health:{on:true,rate:0.0517},suppl:{on:true,rate:0.0211}},
+  payrollCfg:{rounding:'round',supplPremium:true,welfareFund:200,taxWithhold:true},
+  payItems:defaultPayItems(), apprItems:[{id:'ap1',name:'出勤狀況',weight:20},{id:'ap2',name:'出餐/清消表現',weight:30},{id:'ap3',name:'客訴處理',weight:20},{id:'ap4',name:'工作態度',weight:30}],
+}; }
+// 益循生活示範租戶：滿載資料
+function seedYixun(){ const d=defaultTenantData();
+  d.emps=SEED_EMP.map(e=>({...e}));
+  d.depts=[{id:'D0',name:'益循生活總部',parent:null,head:'A23001'},{id:'D1',name:'營運部',parent:'D0',head:'A23001'},{id:'D2',name:'人資行政部',parent:'D0',head:'H24001'},{id:'D3',name:'台北忠孝店',parent:'D1',head:'E25P0455'},{id:'D4',name:'台中一中店',parent:'D1',head:'E26K0129'},{id:'D5',name:'門市組',parent:'D3',head:'E25P0455'},{id:'D6',name:'廚務組',parent:'D3',head:null}];
+  d.deptMap={E26P0312:'D5',E25P0455:'D3',E26K0129:'D4',E25T0820:'D1',H24001:'D2',A23001:'D0',E26P0333:'D5'};
+  d.sales=[{store:0,date:'2026/07/05',amt:38600,guests:142,food:13900,labor:6200,waste:420,by:'王大明'},{store:3,date:'2026/07/05',amt:31250,guests:118,food:12100,labor:5800,waste:610,by:'—'},{store:1,date:'2026/07/05',amt:22400,guests:95,food:9700,labor:5500,waste:1180,by:'陳美惠'}];
+  d.approvals=[{id:1,who:'王大明',empId:'E26P0312',store:0,type:'加班',detail:'06/14 晚班延長 · 出餐尖峰',hrs:2,date:'2026-06-14',state:'待核',kind:'ot'},{id:2,who:'陳美惠',empId:'E26K0129',store:1,type:'特休',detail:'06/20 全天',hrs:8,date:'2026-06-20',state:'待核',kind:'leave'},{id:3,who:'黃品瑄',empId:'E26P0333',store:0,type:'漏打卡',detail:'06/13 下班補登 18:00',hrs:0,state:'待核',kind:'punch'},{id:4,who:'王大明',empId:'E26P0312',store:0,type:'墊付款',detail:'叫貨現金墊付',amt:1280,state:'待核',kind:'advance'}];
+  d.pendingEmps=[{tmp:'p1',name:'吳承恩',idno:'F131******',store:0,dept:'門市',title:'外場',type:'兼職',base:190,bank:'台新 8801****321',start:'2026-07-08',emergObj:{name:'吳母',rel:'母',phone:'09xx'},custom:{}}];
+  d.posts=[{id:1,title:'7月排班注意事項',body:'颱風季來臨，各店請確認緊急聯絡與代班機制。',by:'李文華',role:'hr',date:'2026/07/03',pin:true},{id:2,title:'新版電子薪資條上線',body:'7 月起薪資條改由 LINE 推播，請員工確認已加官方帳號。',by:'周建國',role:'admin',date:'2026/07/01',pin:false}];
+  d.insCfg.unitName='益循生活股份有限公司'; d.insCfg.unitNo='12345678';
+  return d; }
+
+let store=JSON.parse(localStorage.getItem(LS)||'null');
+if(!store){ store={tenant:'yixun',role:'employee',seq:100,tenants:{},tenantStores:{},tenantMeta:{}}; }
+if(!store.tenants) store.tenants={};
+if(!store.tenants.yixun) store.tenants.yixun=seedYixun();
+if(!store.tenants.demo2) store.tenants.demo2=defaultTenantData();
+if(!store.tenants.blank) store.tenants.blank=defaultTenantData();   // 完全空白新租戶
+if(store.seq===undefined) store.seq=100;
+// 分店清單（每租戶）：yixun/demo2 由 TENANTS 帶入；blank 空
+if(!store.tenantStores||!store.tenantStores.yixun){ store.tenantStores={}; Object.keys(TENANTS).forEach(k=>store.tenantStores[k]=TENANTS[k].stores.slice()); }
+else { Object.keys(store.tenantStores).forEach(k=>{ if(TENANTS[k]) TENANTS[k].stores=store.tenantStores[k]; }); }
+if(!store.tenantMeta) store.tenantMeta={};
+Object.keys(store.tenantMeta).forEach(k=>{ if(TENANTS[k]) Object.assign(TENANTS[k],store.tenantMeta[k]); });
+
+// 把目前租戶的資料綁到 store.X（面板都用 store.X / EMP）
+function loadTenant(tid){ const t=store.tenants[tid]; TENANT_KEYS.forEach(k=>{ if(t[k]===undefined) t[k]=defaultTenantData()[k]; store[k]=t[k]; }); EMP=store.emps; }
+function save(){ const t=store.tenants[currentTenant]; if(t){ TENANT_KEYS.forEach(k=>t[k]=store[k]); } localStorage.setItem(LS,JSON.stringify(store)); }
 function nextSeq(){ return ++store.seq; }
 
 let currentTenant=store.tenant, currentRole=store.role, currentMod='home';
+if(!TENANTS[currentTenant]) currentTenant='yixun';
+loadTenant(currentTenant);   // 綁定目前租戶資料
 let rosterFilter={status:'active',dept:'',type:''};
 window.setFilter=(k,v)=>{ rosterFilter[k]=v; render(); };
 
@@ -386,7 +355,7 @@ function boot(){
   ts.value=currentTenant;
   const rs=document.getElementById('roleSel'); rs.innerHTML=Object.entries(ROLES).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');
   rs.value=currentRole;
-  ts.onchange=e=>{ currentTenant=e.target.value; store.tenant=currentTenant; save(); currentMod='home'; render(); };
+  ts.onchange=e=>{ save(); currentTenant=e.target.value; store.tenant=currentTenant; loadTenant(currentTenant); rosterFilter={status:'active',dept:'',type:''}; currentMod='home'; save(); render(); toast('已切換租戶：'+TENANTS[currentTenant].name); };
   rs.onchange=e=>{ currentRole=e.target.value; store.role=currentRole; save(); currentMod='home'; render(); toast('已切換為「'+ROLES[currentRole].name+'」視角'); };
   document.getElementById('navToggle').onclick=()=>{ document.getElementById('nav').classList.toggle('open'); document.getElementById('scrim').classList.toggle('show'); };
   document.getElementById('scrim').onclick=closeNav;
