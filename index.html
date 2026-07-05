@@ -312,6 +312,7 @@ function defaultTenantData(){ return {
 // 益循生活示範租戶：滿載資料
 function seedYixun(){ const d=defaultTenantData();
   d.emps=SEED_EMP.map(e=>({...e}));
+  const w=d.emps.find(e=>e.id==='E26P0312'); if(w) w.docs=[{id:'d1',name:'勞動契約書_2026',category:'勞動契約',uploaded:'2026/01/06',sign:'已簽'},{id:'d2',name:'健保眷屬加保表',category:'勞健保文件',uploaded:'2026/07/01',sign:'待簽'}];
   d.depts=[{id:'D0',name:'益循生活總部',parent:null,head:'A23001'},{id:'D1',name:'營運部',parent:'D0',head:'A23001'},{id:'D2',name:'人資行政部',parent:'D0',head:'H24001'},{id:'D3',name:'台北忠孝店',parent:'D1',head:'E25P0455'},{id:'D4',name:'台中一中店',parent:'D1',head:'E26K0129'},{id:'D5',name:'門市組',parent:'D3',head:'E25P0455'},{id:'D6',name:'廚務組',parent:'D3',head:null}];
   d.deptMap={E26P0312:'D5',E25P0455:'D3',E26K0129:'D4',E25T0820:'D1',H24001:'D2',A23001:'D0',E26P0333:'D5'};
   d.sales=[{store:0,date:'2026/07/05',amt:38600,guests:142,food:13900,labor:6200,waste:420,by:'王大明'},{store:3,date:'2026/07/05',amt:31250,guests:118,food:12100,labor:5800,waste:610,by:'—'},{store:1,date:'2026/07/05',amt:22400,guests:95,food:9700,labor:5500,waste:1180,by:'陳美惠'}];
@@ -456,7 +457,11 @@ PANELS.A=(me)=>{
       ${kv('聯絡電話',me.phone||'—')}${kv('Email',me.email||'—')}
     </div>
     ${(em.name||me.addr)?`<div style="font-size:12px;font-weight:700;color:var(--brand);margin:8px 0 4px">聯絡 / 緊急聯絡</div><div class="grid g2">${kv('通訊地址',me.addr||'—')}${kv('緊急聯絡人',em.name?(em.name+'（'+(em.rel||'—')+'）'+(em.phone||'')):'—')}</div>`:''}
-    <p class="note" style="margin-top:12px">員工僅能檢視本人資料。個資修改需送人資審核（分級權限）。</p></div>`);
+    <p class="note" style="margin-top:12px">員工僅能檢視本人資料。個資修改需送人資審核（分級權限）。</p></div>
+    <div class="card"><h2>📄 我的文件（電子簽章）</h2>
+      <div class="tbl-wrap"><table><tr><th>文件</th><th>類別</th><th>簽署</th><th></th></tr>
+      ${(me.docs&&me.docs.length)?me.docs.map(d=>`<tr><td>📄 ${d.name}</td><td>${d.category}</td><td><span class="pill ${d.sign==='已簽'?'p-ok':d.sign==='待簽'?'p-hold':'p-gray'}">${d.sign}</span></td><td>${d.sign==='待簽'?`<button class="btn sm" onclick="signDoc('${me.id}','${d.id}')">立即簽署</button>`:''}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:14px">目前沒有文件</td></tr>'}</table></div>
+      <p class="note" style="margin-top:10px">待簽文件可線上電子簽名；歷史文件雲端保存隨時調閱。</p></div>`);
   }
   const rf=rosterFilter; const depts=[...new Set(EMP.map(e=>e.dept))];
   const filtered=EMP.filter(e=>{
@@ -537,6 +542,7 @@ window.empEdit=(id)=>{ const e=id?EMP.find(x=>x.id===id):{name:'',store:0,dept:'
     <div class="field"><label class="f">健保眷屬人數</label><input id="eDep" type="number" min="0" max="3" value="${F('dependents',0)}"></div>
     <div class="field"><label class="f">所得稅申報單位</label><input id="eTaxUnit" value="${F('taxUnit',store.insCfg.unitName)}"></div>
     <div class="field"><label class="f">個別發薪科目</label>${id?`<button class="btn ghost" style="width:100%" onclick="closeModal();payStructEditor('${e.id}')">設定薪資結構 →</button>`:'<span class="small" style="color:var(--muted)">建檔後可設</span>'}</div>
+    <div class="field"><label class="f">文件 / 電子簽章</label>${id?`<button class="btn ghost" style="width:100%" onclick="docManager('${e.id}')">📄 文件管理（${(e.docs||[]).length}）→</button>`:'<span class="small" style="color:var(--muted)">建檔後可上傳</span>'}</div>
   </div>
   ${store.customFields.length?`<div style="font-size:12px;font-weight:700;color:var(--brand);margin:10px 0 6px">自訂欄位</div><div class="grid g2">${store.customFields.map((f,i)=>`<div class="field"><label class="f">${f.label}</label><input id="ecf${i}" value="${(e.custom&&e.custom[f.label])||''}"></div>`).join('')}</div>`:''}
   <div class="between" style="margin-top:12px"><div class="row"><button class="btn" onclick="empSave(${id?`'${id}'`:'null'})">${id?'儲存':'建檔'}</button><button class="btn ghost" onclick="closeModal()">取消</button></div>
@@ -570,6 +576,40 @@ window.payStructEditor=(id)=>{ const e=EMP.find(x=>x.id===id); const ov=e.payOve
 window.setPayOverride=(id,itemId,v)=>{ const e=EMP.find(x=>x.id===id); e.payOverrides=e.payOverrides||{};
   if(v==='on') delete e.payOverrides[itemId]; else if(v==='off') e.payOverrides[itemId]='off'; else if(v==='') delete e.payOverrides[itemId]; else e.payOverrides[itemId]=+v||0;
   save(); toast('薪資結構已更新'); };
+// 員工文件管理 + 電子簽章
+const DOC_CATS=['勞動契約','身分證件','勞健保文件','錄取通知書','薪資帳戶','教育訓練','其他'];
+window.docManager=(id)=>{ const e=EMP.find(x=>x.id===id); const docs=e.docs||[];
+  modal(e.name+' · 文件管理',`
+  <div class="between" style="margin-bottom:8px"><span class="lead">合約/證件/勞健保文件雲端歸檔＋電子簽章</span><button class="btn sm" onclick="addDoc('${id}')">＋ 上傳文件</button></div>
+  <div class="tbl-wrap"><table><tr><th>文件</th><th>類別</th><th>上傳日</th><th>簽署</th><th></th></tr>
+  ${docs.length?docs.map(d=>`<tr><td>📄 ${d.name}</td><td>${d.category}</td><td>${d.uploaded}</td>
+    <td><span class="pill ${d.sign==='已簽'?'p-ok':d.sign==='待簽'?'p-hold':'p-gray'}">${d.sign}</span></td>
+    <td><div class="row">${d.sign==='待簽'?`<button class="btn sm" onclick="signDoc('${id}','${d.id}')">代簽</button>`:''}<button class="btn sm warn" onclick="delDoc('${id}','${d.id}')">🗑</button></div></td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:14px">尚無文件</td></tr>'}</table></div>
+  <p class="note" style="margin-top:10px">需簽署的文件會推播給員工線上電子簽名（待簽→已簽）；到職/離職文件自動歸位。</p>`); };
+window.addDoc=(id)=>{ modal('上傳文件 · '+EMP.find(x=>x.id===id).name,`
+  <div class="field"><label class="f">文件名稱</label><input id="docName" placeholder="例：勞動契約書_2026"></div>
+  <div class="field"><label class="f">類別</label><select class="fld" id="docCat">${DOC_CATS.map(c=>`<option>${c}</option>`).join('')}</select></div>
+  <label style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">需員工電子簽署<span class="switch"><input type="checkbox" id="docSign" checked><span></span></span></label>
+  <div class="field"><button class="btn ghost" style="width:100%" onclick="toast('（示範）已選擇檔案 / 拍照上傳')">📎 選擇檔案 / 拍照</button></div>
+  <div class="row"><button class="btn" onclick="saveDoc('${id}')">上傳</button><button class="btn ghost" onclick="docManager('${id}')">返回</button></div>`); };
+window.saveDoc=(id)=>{ const e=EMP.find(x=>x.id===id); const name=document.getElementById('docName').value.trim(); if(!name){ toast('請輸入文件名稱'); return; }
+  const needSign=document.getElementById('docSign').checked; e.docs=e.docs||[];
+  e.docs.push({id:'doc'+nextSeq(),name,category:document.getElementById('docCat').value,uploaded:'2026/07/05',sign:needSign?'待簽':'免簽'});
+  if(needSign) notify('✍️','文件待簽署','@'+e.name+'：有一份「'+name+'」待你電子簽署');
+  save(); toast('文件已上傳'); docManager(id); };
+window.signDoc=(id,docId)=>{ const e=EMP.find(x=>x.id===id); const d=e.docs.find(x=>x.id===docId); d.sign='已簽'; notify('✅','文件已簽署',e.name+' 已完成「'+d.name+'」電子簽署'); save(); toast('已簽署'); docManager(id); };
+window.delDoc=(id,docId)=>{ const e=EMP.find(x=>x.id===id); if(!confirm('刪除此文件？')) return; e.docs=e.docs.filter(x=>x.id!==docId); save(); toast('已刪除'); docManager(id); };
+// 出勤異常掃描 + 自動通知
+function scanAnomalies(){ const out=[];
+  EMP.filter(e=>e.state==='在職').forEach(e=>{ const at=attend(e.id);
+    if(at.lateMin>store.attendCfg.lateGrace) out.push({emp:e,type:'遲到',detail:'本月遲到 '+at.late+' 次·累計 '+at.lateMin+' 分（超過寬限 '+store.attendCfg.lateGrace+' 分）'});
+    if(at.early>0) out.push({emp:e,type:'早退',detail:'本月早退 '+at.early+' 次'});
+    const c=store.clock[e.id]; if(c&&c.in&&!c.out) out.push({emp:e,type:'缺卡',detail:'今日只有上班打卡、無下班打卡'});
+  });
+  return out; }
+window.notifyAnomalies=()=>{ const a=scanAnomalies(); if(!a.length){ toast('目前無出勤異常 🎉'); return; }
+  a.forEach(x=>notify('⚠️','出勤異常：'+x.type, x.emp.name+' — '+x.detail));
+  toast('已掃描並推播 '+a.length+' 筆出勤異常通知'); render(); };
 window.empLeave=(id)=>{ const e=EMP.find(x=>x.id===id); if(!confirm('辦理「'+e.name+'」離職封存？（自動退保、結算年資特休）')) return; e.state='離職'; e.leaveDate=e.leaveDate||'2026-07-05'; delete store.deptMap[id]; save(); toast(e.name+' 已離職封存'); render(); };
 // 年資（由到職日算 + 手動調整「日數」）
 function seniority(e){ if(!e.start) return '—'; const s=new Date(e.start), n=new Date(2026,6,5);
@@ -638,6 +678,11 @@ PANELS.B=(me)=>{
       ${can('hr')?'<button class="btn sm sec" style="margin-top:12px" onclick="go(\'BSET\')">⚙ 打卡 / 考勤參數設置</button>':'<div class="note" style="margin-top:12px">打卡資料即時回傳後台。</div>'}
     </div>
   </div>
+  ${can('supervisor')?(()=>{ const anom=scanAnomalies(); return `<div class="card" style="${anom.length?'border-color:var(--amber)':''}"><div class="between"><h2 style="margin:0">⚠️ 出勤異常自動偵測（${anom.length}）</h2>
+    <button class="btn sm" onclick="notifyAnomalies()">掃描並推播通知</button></div>
+    <div class="tbl-wrap" style="margin-top:10px"><table><tr><th>員工</th><th>異常類型</th><th>說明</th></tr>
+    ${anom.length?anom.map(x=>`<tr><td>${x.emp.name}</td><td><span class="pill ${x.type==='遲到'?'p-warn':x.type==='早退'?'p-hold':'p-info'}">${x.type}</span></td><td style="white-space:normal">${x.detail}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:12px">目前無出勤異常 🎉</td></tr>'}</table></div>
+    <p class="note" style="margin-top:10px">系統依考勤設置（遲到寬限 ${store.attendCfg.lateGrace} 分）自動判定遲到/早退/缺卡；按「掃描並推播」即發通知給主管與當事人。</p></div>`; })():''}
   ${can('supervisor')?`<div class="card"><div class="between"><h2 style="margin:0">📊 本月考勤彙總（依規則計算）</h2>
     <button class="btn sm ghost" onclick="exportCSV('attendance')">匯出 CSV</button></div>
     <div class="tbl-wrap" style="margin-top:12px"><table><tr><th>員工</th><th class="num">出勤天數</th><th class="num">遲到</th><th class="num">遲到分鐘</th><th class="num">早退</th><th class="num">加班時數</th><th class="num">加班費(帶薪資)</th></tr>
