@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>益循 HRM · 一條 LINE，管好整間店的人資</title>
+<meta name="description" content="專為台灣餐飲店設計的 LINE 人資系統：定位打卡、智慧排班、線上簽核、薪資自動算（含勞健保）、多分店管理。一支手機搞定。">
+<style>
+:root{
+  --brand:#1f8a4c; --brand-d:#12673a; --brand-l:#e7f4ec;
+  --ink:#152019; --muted:#5a6b61; --line:#e2ebe5;
+  --ground:#ffffff; --ground-2:#f4f9f6; --card:#ffffff;
+  --amber:#f2a900; --coral:#ff6b53;
+  --sh:0 1px 2px rgba(20,50,35,.04),0 8px 24px rgba(20,50,35,.06);
+  --sh-lg:0 20px 60px rgba(18,103,58,.16);
+  --r:16px; --maxw:1120px;
+  --sans:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --ink:#e8f1eb; --muted:#9db0a5; --line:#25332c;
+    --ground:#0d1411; --ground-2:#101a15; --card:#141e18; --brand-l:#16281e;
+    --sh:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35); --sh-lg:0 20px 60px rgba(0,0,0,.5); }
+}
+:root[data-theme="dark"]{ --ink:#e8f1eb; --muted:#9db0a5; --line:#25332c;
+  --ground:#0d1411; --ground-2:#101a15; --card:#141e18; --brand-l:#16281e;
+  --sh:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35); --sh-lg:0 20px 60px rgba(0,0,0,.5); }
+:root[data-theme="light"]{ --ink:#152019; --muted:#5a6b61; --line:#e2ebe5;
+  --ground:#ffffff; --ground-2:#f4f9f6; --card:#ffffff; --brand-l:#e7f4ec;
+  --sh:0 1px 2px rgba(20,50,35,.04),0 8px 24px rgba(20,50,35,.06); --sh-lg:0 20px 60px rgba(18,103,58,.16); }
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden}
+body{font-family:var(--sans);color:var(--ink);background:var(--ground);line-height:1.65;-webkit-font-smoothing:antialiased;font-size:16px}
+img{max-width:100%}
+a{color:inherit;text-decoration:none}
+h1,h2,h3{margin:0;line-height:1.2;text-wrap:balance;letter-spacing:-.01em}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+.eyebrow{font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--brand)}
+.lead{color:var(--muted);font-size:17px}
+.btn{display:inline-flex;align-items:center;gap:8px;border:none;cursor:pointer;font-family:inherit;font-weight:800;font-size:15px;padding:13px 22px;border-radius:12px;transition:transform .12s,box-shadow .2s,background .2s}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn.primary{background:linear-gradient(135deg,var(--brand),var(--brand-d));color:#fff;box-shadow:0 8px 20px rgba(18,103,58,.28)}
+.btn.primary:hover{box-shadow:0 12px 28px rgba(18,103,58,.4)}
+.btn.ghost{background:var(--card);color:var(--ink);border:1.5px solid var(--line)}
+.btn.ghost:hover{border-color:var(--brand)}
+.btn.line{background:#06c755;color:#fff}
+.btn.lg{padding:16px 30px;font-size:16px}
+
+/* nav */
+header.nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--ground) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav-in{display:flex;align-items:center;justify-content:space-between;height:62px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:900;font-size:19px;letter-spacing:-.02em}
+.logo .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--brand),var(--brand-d));display:grid;place-items:center;color:#fff;font-size:18px;box-shadow:0 4px 12px rgba(18,103,58,.35)}
+.nav-links{display:flex;align-items:center;gap:26px;font-size:14.5px;font-weight:600}
+.nav-links a{color:var(--muted)}.nav-links a:hover{color:var(--ink)}
+.nav-cta{display:flex;align-items:center;gap:10px}
+.theme-btn{background:var(--card);border:1.5px solid var(--line);border-radius:10px;width:38px;height:38px;cursor:pointer;font-size:16px;color:var(--ink)}
+@media(max-width:820px){.nav-links{display:none}}
+
+/* hero */
+.hero{position:relative;padding:72px 0 40px;background:
+  radial-gradient(1000px 500px at 80% -10%,var(--brand-l),transparent 60%),
+  radial-gradient(700px 400px at 5% 10%,color-mix(in srgb,var(--amber) 12%,transparent),transparent 55%)}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+.hero h1{font-size:clamp(30px,5.2vw,52px);font-weight:900}
+.hero h1 .hl{color:var(--brand);position:relative;white-space:nowrap}
+.hero h1 .hl::after{content:"";position:absolute;left:0;right:0;bottom:.06em;height:.28em;background:color-mix(in srgb,var(--amber) 55%,transparent);z-index:-1;border-radius:3px}
+.hero p.sub{font-size:18.5px;color:var(--muted);margin:22px 0 30px;max-width:30em}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap}
+.hero-trust{display:flex;gap:22px;margin-top:26px;flex-wrap:wrap;font-size:13.5px;color:var(--muted)}
+.hero-trust b{color:var(--ink)}
+@media(max-width:900px){.hero-grid{grid-template-columns:1fr;gap:34px}.hero{padding:44px 0 20px}}
+
+/* phone mockup */
+.phone{width:290px;margin:0 auto;background:#0d1411;border-radius:38px;padding:11px;box-shadow:var(--sh-lg);border:1px solid rgba(255,255,255,.06);position:relative}
+.phone::before{content:"";position:absolute;top:20px;left:50%;transform:translateX(-50%);width:96px;height:6px;background:#000;border-radius:4px;z-index:3}
+.phone-scr{background:var(--ground-2);border-radius:29px;overflow:hidden;height:520px;position:relative}
+.p-top{background:linear-gradient(135deg,var(--brand),var(--brand-d));color:#fff;padding:34px 16px 14px;position:relative}
+.p-top .st{font-size:11px;opacity:.85}.p-top .nm{font-size:17px;font-weight:800;margin-top:2px}
+.p-body{padding:14px;display:flex;flex-direction:column;gap:10px}
+.p-card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 13px;box-shadow:var(--sh)}
+.p-punch{text-align:center;padding:16px 13px}
+.p-punch .big{font-family:ui-monospace,monospace;font-size:26px;font-weight:800;color:var(--brand);font-variant-numeric:tabular-nums}
+.p-punch .btnp{margin-top:9px;background:linear-gradient(135deg,var(--brand),var(--brand-d));color:#fff;border-radius:10px;padding:9px;font-weight:800;font-size:13px}
+.p-row{display:flex;justify-content:space-between;align-items:center;font-size:12.5px}
+.p-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;margin-top:2px}
+.p-ic{aspect-ratio:1;background:var(--brand-l);border-radius:11px;display:grid;place-items:center;font-size:17px}
+.p-pill{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--brand-l);color:var(--brand-d)}
+
+/* sections */
+section{padding:64px 0}
+.sec-head{text-align:center;max-width:640px;margin:0 auto 44px}
+.sec-head h2{font-size:clamp(24px,3.6vw,36px);font-weight:900;margin:12px 0 10px}
+.pain{background:var(--ground-2)}
+.pain-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+.pain-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:24px;box-shadow:var(--sh)}
+.pain-card .x{font-size:24px}.pain-card h3{font-size:17px;margin:12px 0 6px}
+.pain-card p{color:var(--muted);font-size:14.5px;margin:0}
+.arrow-to{text-align:center;margin:30px 0 0;color:var(--brand);font-weight:800}
+
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.feat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:24px;box-shadow:var(--sh);transition:transform .18s,box-shadow .18s,border-color .18s}
+.feat:hover{transform:translateY(-4px);box-shadow:var(--sh-lg);border-color:color-mix(in srgb,var(--brand) 40%,var(--line))}
+.feat .ic{width:46px;height:46px;border-radius:12px;background:var(--brand-l);display:grid;place-items:center;font-size:22px;margin-bottom:14px}
+.feat h3{font-size:17.5px;margin-bottom:6px}
+.feat p{color:var(--muted);font-size:14.5px;margin:0}
+
+.strip{background:linear-gradient(135deg,var(--brand),var(--brand-d));color:#fff}
+.strip .wrap{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;text-align:center}
+.strip .n{font-size:clamp(28px,4vw,42px);font-weight:900;font-variant-numeric:tabular-nums}
+.strip .l{font-size:13.5px;opacity:.9}
+
+/* pricing */
+.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch}
+.plan{background:var(--card);border:1.5px solid var(--line);border-radius:20px;padding:30px 26px;box-shadow:var(--sh);display:flex;flex-direction:column;position:relative}
+.plan.pop{border-color:var(--brand);box-shadow:var(--sh-lg);transform:scale(1.03)}
+.plan .tag{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--brand);color:#fff;font-size:12px;font-weight:800;padding:4px 14px;border-radius:20px}
+.plan .pn{font-size:15px;font-weight:800;color:var(--brand)}
+.plan .pp{font-size:38px;font-weight:900;margin:8px 0 2px;font-variant-numeric:tabular-nums}
+.plan .pp small{font-size:15px;color:var(--muted);font-weight:600}
+.plan .pd{color:var(--muted);font-size:14px;min-height:42px}
+.plan ul{list-style:none;padding:0;margin:18px 0;display:flex;flex-direction:column;gap:10px;flex:1}
+.plan li{font-size:14.5px;display:flex;gap:9px;align-items:flex-start}
+.plan li::before{content:"✓";color:var(--brand);font-weight:900;flex-shrink:0}
+.plan li.no{color:var(--muted)}.plan li.no::before{content:"—";color:var(--muted)}
+@media(max-width:900px){.pain-grid,.feat-grid,.price-grid,.strip .wrap{grid-template-columns:1fr}.plan.pop{transform:none}}
+@media(max-width:900px) and (min-width:560px){.feat-grid{grid-template-columns:1fr 1fr}.strip .wrap{grid-template-columns:1fr 1fr}}
+
+/* faq */
+.faq{max-width:760px;margin:0 auto}
+details{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:4px 20px;margin-bottom:12px;box-shadow:var(--sh)}
+summary{cursor:pointer;font-weight:700;padding:15px 0;list-style:none;display:flex;justify-content:space-between;align-items:center;font-size:15.5px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-size:22px;color:var(--brand);font-weight:400;transition:transform .2s}
+details[open] summary::after{transform:rotate(45deg)}
+details p{color:var(--muted);font-size:14.5px;margin:0 0 16px}
+
+/* cta band */
+.cta-band{background:var(--ground-2)}
+.cta-box{background:linear-gradient(135deg,var(--brand),var(--brand-d));color:#fff;border-radius:26px;padding:52px 40px;text-align:center;box-shadow:var(--sh-lg)}
+.cta-box h2{font-size:clamp(24px,3.6vw,34px);font-weight:900;color:#fff}
+.cta-box p{opacity:.92;margin:14px 0 26px;font-size:17px}
+.cta-box .btn.ghost{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3)}
+
+footer{padding:44px 0;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+.foot-in{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center}
+.note-int{margin-top:10px;font-size:12px;color:var(--muted);background:var(--brand-l);border-radius:8px;padding:6px 10px;display:inline-block}
+
+/* modal */
+.ovl{position:fixed;inset:0;background:rgba(10,20,15,.55);backdrop-filter:blur(3px);z-index:100;display:none;align-items:center;justify-content:center;padding:18px}
+.ovl.on{display:flex}
+.modal{background:var(--ground);border-radius:20px;max-width:460px;width:100%;box-shadow:var(--sh-lg);max-height:92vh;overflow:auto}
+.modal-h{padding:20px 24px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.modal-h b{font-size:17px}
+.modal-b{padding:22px 24px}
+.steps{display:flex;gap:6px;margin-bottom:20px}
+.steps .s{flex:1;height:5px;border-radius:3px;background:var(--line)}
+.steps .s.on{background:var(--brand)}
+.fld{width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;font-family:inherit;font-size:15px;background:var(--card);color:var(--ink);margin-bottom:13px}
+.fld:focus{outline:none;border-color:var(--brand)}
+label.fl{font-size:13px;font-weight:700;display:block;margin-bottom:5px}
+.plan-pick{display:flex;gap:10px;margin-bottom:6px}
+.plan-pick .pk{flex:1;border:1.5px solid var(--line);border-radius:12px;padding:12px;text-align:center;cursor:pointer;font-size:13px}
+.plan-pick .pk.sel{border-color:var(--brand);background:var(--brand-l)}
+.plan-pick .pk b{display:block;font-size:15px;color:var(--brand)}
+.pay-opt{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:12px;padding:13px;margin-bottom:10px;cursor:pointer;font-size:14.5px;font-weight:600}
+.pay-opt.sel{border-color:var(--brand);background:var(--brand-l)}
+.x-close{cursor:pointer;font-size:22px;color:var(--muted);background:none;border:none}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--ground);padding:12px 22px;border-radius:12px;font-weight:700;font-size:14px;opacity:0;transition:.3s;z-index:200;box-shadow:var(--sh-lg)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="nav"><div class="wrap nav-in">
+  <div class="logo"><span class="mark">益</span>益循 HRM</div>
+  <nav class="nav-links">
+    <a href="#features">功能</a><a href="#pricing">方案</a><a href="#faq">常見問題</a>
+    <a href="../?x=1" target="_blank">線上試玩 ↗</a>
+  </nav>
+  <div class="nav-cta">
+    <button class="theme-btn" onclick="toggleTheme()" aria-label="切換深淺色" id="themeBtn">🌙</button>
+    <button class="btn primary" onclick="openBuy()">免費試用</button>
+  </div>
+</div></header>
+
+<!-- HERO -->
+<section class="hero"><div class="wrap hero-grid">
+  <div>
+    <span class="eyebrow">餐飲業專用 · LINE 人資系統</span>
+    <h1>一條 <span class="hl">LINE</span>，<br>管好整間店的人資</h1>
+    <p class="sub">定位打卡、智慧排班、線上簽核、薪資自動算（含勞健保）、多分店管理——員工用 LINE 就能操作，老闆一支手機全都看得到。不裝 App、不買機器。</p>
+    <div class="hero-cta">
+      <button class="btn primary lg" onclick="openBuy()">免費試用 14 天</button>
+      <a class="btn ghost lg" href="../?x=1" target="_blank">看實際畫面 →</a>
+    </div>
+    <div class="hero-trust">
+      <span>🏪 <b>多分店</b>集中管理</span>
+      <span>⚖️ <b>勞健保</b>級距自動計算</span>
+      <span>📍 <b>GPS</b> 定位防代打卡</span>
+    </div>
+  </div>
+  <div class="phone" aria-hidden="true">
+    <div class="phone-scr">
+      <div class="p-top"><div class="st">台北忠孝店 · 早班</div><div class="nm">午安，王大明 👋</div></div>
+      <div class="p-body">
+        <div class="p-card p-punch"><div style="font-size:12px;color:var(--muted)">現在時間</div><div class="big">08:57</div><div class="btnp">📍 上班打卡</div></div>
+        <div class="p-card"><div class="p-row"><span>本月出勤</span><span class="p-pill">全勤 ✓</span></div><div class="p-row" style="margin-top:8px"><span>特休剩餘</span><b>3.0 天</b></div></div>
+        <div class="p-grid">
+          <div><div class="p-ic">📅</div></div><div><div class="p-ic">📝</div></div>
+          <div><div class="p-ic">💰</div></div><div><div class="p-ic">📈</div></div>
+        </div>
+        <div class="p-card"><div class="p-row"><span>🔔 薪資條已發放</span><span style="color:var(--muted);font-size:11px">剛剛</span></div></div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- PAIN -->
+<section class="pain"><div class="wrap">
+  <div class="sec-head"><span class="eyebrow">是不是很熟悉？</span><h2>還在用這些「土法煉鋼」管人？</h2></div>
+  <div class="pain-grid">
+    <div class="pain-card"><div class="x">😵</div><h3>LINE 群組排班</h3><p>訊息洗版、換班沒人認帳、月底對不出誰上了幾天。</p></div>
+    <div class="pain-card"><div class="x">📄</div><h3>紙本 / Excel 打卡</h3><p>忘打卡、代打卡、遲到早退全靠人工核，容易錯又費時。</p></div>
+    <div class="pain-card"><div class="x">🧮</div><h3>手算薪水勞健保</h3><p>級距、加班倍率、補充保費算到頭痛，還怕算錯挨罰。</p></div>
+  </div>
+  <div class="arrow-to">↓ 這些，益循 HRM 一次幫你解決 ↓</div>
+</div></section>
+
+<!-- FEATURES -->
+<section id="features"><div class="wrap">
+  <div class="sec-head"><span class="eyebrow">完整功能</span><h2>一套系統，涵蓋人資全流程</h2><p class="lead">從員工報到到離職、從打卡到薪資條，每個環節都在同一個 LINE 裡完成。</p></div>
+  <div class="feat-grid">
+    <div class="feat"><div class="ic">📍</div><h3>定位打卡</h3><p>依門市 GPS 圍籬打卡，可要求拍照，杜絕代打卡；遲到早退依規則自動判定。</p></div>
+    <div class="feat"><div class="ic">📅</div><h3>智慧排班</h3><p>自訂班別、拖拉排班、缺班一眼看出；班表直接推播到員工 LINE。</p></div>
+    <div class="feat"><div class="ic">📝</div><h3>線上簽核</h3><p>請假、加班、補卡、墊付款，手機申請、主管手機核准，全程留痕。</p></div>
+    <div class="feat"><div class="ic">💰</div><h3>薪資自動算</h3><p>串接打卡工時與加班，勞保/健保/勞退/補充保費依級距自動計算，一鍵出薪資條。</p></div>
+    <div class="feat"><div class="ic">📈</div><h3>業績回報</h3><p>每日營業額、來客數、食材/人事成本即時回報，老闆遠端看毛利。</p></div>
+    <div class="feat"><div class="ic">🎓</div><h3>教育訓練 / 福利</h3><p>食安/消防等法遵訓練時數自動累計；三節、生日、健檢、團保集中管理。</p></div>
+    <div class="feat"><div class="ic">🏪</div><h3>多分店管理</h3><p>每間店資料獨立、權限分級（員工／主管／人資／管理員），總部一站掌握。</p></div>
+    <div class="feat"><div class="ic">✍️</div><h3>文件電子簽章</h3><p>勞動契約、勞健保文件雲端歸檔，需簽文件推播員工線上電子簽名。</p></div>
+    <div class="feat"><div class="ic">🔔</div><h3>通知推播</h3><p>打卡、簽核、薪資條、出勤異常自動推播到 LINE，該處理的一個都不漏。</p></div>
+  </div>
+</div></section>
+
+<!-- STRIP -->
+<section class="strip"><div class="wrap">
+  <div><div class="n">19+</div><div class="l">功能模組</div></div>
+  <div><div class="n">4</div><div class="l">權限分級</div></div>
+  <div><div class="n">0</div><div class="l">額外硬體</div></div>
+  <div><div class="n">100%</div><div class="l">在 LINE 裡完成</div></div>
+</div></section>
+
+<!-- PRICING -->
+<section id="pricing"><div class="wrap">
+  <div class="sec-head"><span class="eyebrow">方案價格</span><h2>依店數與人數，彈性選擇</h2><p class="lead">先免費試用 14 天，滿意再付費。以下為示範定價，正式方案以洽談為準。</p></div>
+  <div class="price-grid">
+    <div class="plan">
+      <div class="pn">試用 Trial</div>
+      <div class="pp">NT$0<small> / 14 天</small></div>
+      <div class="pd">單店、最多 10 名員工，完整功能體驗。</div>
+      <ul><li>全功能開放</li><li>1 間分店</li><li>10 名員工</li><li class="no">專屬客服</li></ul>
+      <button class="btn ghost" onclick="openBuy('trial')">開始試用</button>
+    </div>
+    <div class="plan pop">
+      <div class="tag">最受歡迎</div>
+      <div class="pn">標準 Standard</div>
+      <div class="pp">NT$1,280<small> / 店 / 月</small></div>
+      <div class="pd">單店餐飲最適用，含薪資與勞健保計算。</div>
+      <ul><li>全功能開放</li><li>單店不限員工數</li><li>薪資＋勞健保自動算</li><li>LINE 通知推播</li><li>線上客服</li></ul>
+      <button class="btn primary" onclick="openBuy('standard')">選擇標準版</button>
+    </div>
+    <div class="plan">
+      <div class="pn">企業 Enterprise</div>
+      <div class="pp">洽談<small> / 多店</small></div>
+      <div class="pd">連鎖／多分店，含總部集中管理與客製。</div>
+      <ul><li>多分店集中管理</li><li>權限分級與稽核</li><li>客製報表／API</li><li>專屬導入顧問</li></ul>
+      <button class="btn ghost" onclick="openBuy('enterprise')">聯繫我們</button>
+    </div>
+  </div>
+</div></section>
+
+<!-- FAQ -->
+<section id="faq" class="pain"><div class="wrap">
+  <div class="sec-head"><span class="eyebrow">常見問題</span><h2>你可能想問</h2></div>
+  <div class="faq">
+    <details open><summary>員工需要另外裝 App 嗎？</summary><p>不用。員工只要加入店家的 LINE 官方帳號，打卡、看班表、請假、領薪資條都在 LINE 裡完成，零學習成本。</p></details>
+    <details><summary>薪資勞健保真的能自動算嗎？</summary><p>可以。系統依打卡工時、加班倍率（1.34／1.67／2.67）、投保級距與勞保/健保/勞退/補充保費規則計算，可設定部分工時、眷屬加保與個別薪資結構，一鍵產生薪資條。</p></details>
+    <details><summary>可以管理很多間店嗎？</summary><p>可以。每間分店資料完全獨立、權限分級，總部帳號能跨店查看與管理，適合連鎖或多品牌經營。</p></details>
+    <details><summary>打卡如何防止代打卡？</summary><p>採門市 GPS 定位圍籬，超出範圍不能打卡，並可要求打卡拍照；遲到、早退、缺卡由系統自動偵測並通知。</p></details>
+    <details><summary>資料安全嗎？放哪裡？</summary><p>每個租戶的後台明細（打卡座標、簽核紀錄、薪資明細等）可另存於店家自己的雲端試算表，資料所有權在店家手上，隨時可調閱。</p></details>
+  </div>
+</div></section>
+
+<!-- CTA -->
+<section class="cta-band"><div class="wrap">
+  <div class="cta-box">
+    <h2>今天就讓管人變簡單</h2>
+    <p>14 天免費試用，不需信用卡。滿意再談方案。</p>
+    <div class="hero-cta" style="justify-content:center">
+      <button class="btn ghost lg" onclick="openBuy()">免費試用</button>
+      <a class="btn line lg" href="#" onclick="lineToast();return false">＋ 加入 LINE 諮詢</a>
+    </div>
+  </div>
+</div></section>
+
+<footer><div class="wrap foot-in">
+  <div>
+    <div class="logo" style="font-size:16px"><span class="mark" style="width:26px;height:26px;font-size:14px">益</span>益循 HRM</div>
+    <div style="margin-top:8px">餐飲業專用的 LINE 人資系統 · 益循生活股份有限公司（示範）</div>
+    <div class="note-int">🔧 這是產品雛形頁 — 金流串接、LINE 官方帳號、廣告投放尚待開通</div>
+  </div>
+  <div style="text-align:right;font-size:13px">
+    <a href="../?x=1" target="_blank">線上試玩</a> · <a href="#features">功能</a> · <a href="#pricing">方案</a><br>
+    <span style="opacity:.7">© 2026 益循生活</span>
+  </div>
+</div></footer>
+
+<!-- BUY MODAL -->
+<div class="ovl" id="ovl"><div class="modal">
+  <div class="modal-h"><b id="mTitle">開始免費試用</b><button class="x-close" onclick="closeBuy()">×</button></div>
+  <div class="modal-b" id="mBody"></div>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// theme
+function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); document.getElementById('themeBtn').textContent=t==='dark'?'☀️':'🌙'; try{localStorage.setItem('yx_theme',t)}catch(e){} }
+function toggleTheme(){ const cur=document.documentElement.getAttribute('data-theme')|| (matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'); applyTheme(cur==='dark'?'light':'dark'); }
+try{ const s=localStorage.getItem('yx_theme'); if(s) applyTheme(s); else document.getElementById('themeBtn').textContent=matchMedia('(prefers-color-scheme:dark)').matches?'☀️':'🌙'; }catch(e){}
+
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2200); }
+function lineToast(){ toast('LINE 官方帳號尚未開通（雛形）'); }
+
+// purchase flow (MOCKUP — no real payment)
+var PLANS={trial:{n:'試用版',p:'NT$0 / 14 天'},standard:{n:'標準版',p:'NT$1,280 / 店 / 月'},enterprise:{n:'企業版',p:'專人洽談'}};
+var buyState={plan:'standard',pay:'ecpay'};
+function openBuy(plan){ buyState.plan=plan||'standard'; buyState.step=1; renderBuy(); document.getElementById('ovl').classList.add('on'); }
+function closeBuy(){ document.getElementById('ovl').classList.remove('on'); }
+document.getElementById('ovl').addEventListener('click',function(e){ if(e.target===this) closeBuy(); });
+
+function renderBuy(){
+  var s=buyState.step, body=document.getElementById('mBody'), title=document.getElementById('mTitle');
+  var bar='<div class="steps"><div class="s '+(s>=1?'on':'')+'"></div><div class="s '+(s>=2?'on':'')+'"></div><div class="s '+(s>=3?'on':'')+'"></div></div>';
+  if(s===1){ title.textContent='① 選擇方案';
+    body.innerHTML=bar+'<div class="plan-pick">'+
+      Object.keys(PLANS).map(function(k){return '<div class="pk '+(buyState.plan===k?'sel':'')+'" onclick="buyState.plan=\''+k+'\';renderBuy()"><b>'+PLANS[k].n+'</b>'+PLANS[k].p+'</div>';}).join('')+'</div>'+
+      '<button class="btn primary" style="width:100%;margin-top:14px" onclick="buyState.step=2;renderBuy()">下一步：填寫店家資料</button>';
+  } else if(s===2){ title.textContent='② 店家資料';
+    body.innerHTML=bar+
+      '<label class="fl">店家名稱</label><input class="fld" id="f_store" placeholder="例：益循生活 台北忠孝店">'+
+      '<label class="fl">聯絡人 / 電話</label><input class="fld" id="f_contact" placeholder="王小姐 / 0912-xxx-xxx">'+
+      '<label class="fl">Email</label><input class="fld" id="f_email" placeholder="you@example.com">'+
+      '<label class="fl">員工人數</label><input class="fld" id="f_size" placeholder="例：8" inputmode="numeric">'+
+      '<div style="display:flex;gap:10px"><button class="btn ghost" onclick="buyState.step=1;renderBuy()">上一步</button>'+
+      '<button class="btn primary" style="flex:1" onclick="toStep3()">下一步：確認</button></div>';
+  } else if(s===3){ title.textContent='③ 確認與付款';
+    var P=PLANS[buyState.plan];
+    var payHtml = buyState.plan==='trial'
+      ? '<div class="p-card" style="background:var(--brand-l);border:none;padding:14px;border-radius:12px;font-size:14px">試用版免付款，送出後專人與你聯繫開通 🎉</div>'
+      : '<label class="fl">付款方式</label>'+
+        [['ecpay','綠界 ECPay'],['newebpay','藍新 NewebPay'],['card','信用卡 (Stripe)']].map(function(o){
+          return '<div class="pay-opt '+(buyState.pay===o[0]?'sel':'')+'" onclick="buyState.pay=\''+o[0]+'\';renderBuy()"><span>💳</span>'+o[1]+'</div>';}).join('')+
+        '<div class="note-int" style="margin:2px 0 4px">🔧 金流串接位置：此處接商戶 API（尚未串接真實金流）</div>';
+    body.innerHTML=bar+
+      '<div class="p-card" style="padding:14px;margin-bottom:14px"><div class="p-row"><span>方案</span><b>'+P.n+'</b></div>'+
+      '<div class="p-row" style="margin-top:6px"><span>金額</span><b>'+P.p+'</b></div></div>'+
+      payHtml+
+      '<div style="display:flex;gap:10px;margin-top:6px"><button class="btn ghost" onclick="buyState.step=2;renderBuy()">上一步</button>'+
+      '<button class="btn primary" style="flex:1" onclick="submitBuy()">'+(buyState.plan==='trial'?'送出試用申請':'前往付款')+'</button></div>';
+  }
+}
+function toStep3(){ buyState.step=3; renderBuy(); }
+function submitBuy(){
+  if(buyState.plan==='trial'){ closeBuy(); toast('試用申請已送出！專人將盡快與你聯繫 🎉'); }
+  else { closeBuy(); toast('（雛形）此處將導向金流商付款頁 — 待串接'); }
+}
+</script>
+</body>
+</html>
