@@ -427,7 +427,10 @@ function renderNav(){
   });
   nav.innerHTML=h;
 }
-function go(k){ currentMod=k; closeNav(); render(); document.querySelector('.main').scrollTop=0; }
+function go(k){ // 權限強制：模組被關閉時 go() 也擋（不只藏選單，防深連結繞過）
+  const m=MODS.find(x=>x.k===k);
+  if(m&&k!=='home'&&!canMod(k)){ toast('你的角色沒有「'+m.name+'」權限'); k='home'; }
+  currentMod=k; closeNav(); render(); document.querySelector('.main').scrollTop=0; }
 window.go=go;
 
 function render(){
@@ -592,6 +595,7 @@ window.empEdit=(id)=>{ const e=id?EMP.find(x=>x.id===id):{name:'',store:0,dept:'
     ${id&&e.role!=='admin'?`<button class="btn sm warn" onclick="empDelete('${e.id}')" title="永久刪除（誤建/未報到用）">🗑 刪除此員工</button>`:''}</div>`); };
 window.empSave=(id)=>{ const name=document.getElementById('eName').value.trim(); if(!name){ toast('請輸入姓名'); return; }
   const g=fid=>{ const el=document.getElementById(fid); return el?el.value:''; };
+  if((+g('eBase')||0)<0){ toast('薪資不可為負數'); return; }   // QA: 負薪防護
   const custom={}; store.customFields.forEach((f,i)=>{ const el=document.getElementById('ecf'+i); if(el&&el.value.trim()) custom[f.label]=el.value.trim(); });
   const gc=fid=>{ const el=document.getElementById(fid); return el?el.checked:false; };
   const data={name,idno:g('eIdno'),store:+g('eStore'),dept:g('eDept'),title:g('eTitle'),type:g('eType'),base:+g('eBase')||0,role:g('eRole'),bank:g('eBank'),start:g('eStart'),
@@ -1024,8 +1028,9 @@ PANELS.F=(me)=>{
 };
 function applyLeaveBalance(a,dir){ // dir=-1 扣, +1 還
   if(!a.empId) return; const b=leaveBal(a.empId);
-  if(a.type==='特休') b.annual=Math.max(0,b.annual+dir*a.hrs);
-  else if(a.type==='加班') b.comp=Math.max(0,b.comp+dir*(-a.hrs)); // 加班核准=補休增加（dir=-1 時 +hrs）
+  const hrs=Math.max(0,+a.hrs||0);   // 負時數防護：擋「-8h 特休反而加餘額」漏洞（2026-07-08 QA 修）
+  if(a.type==='特休') b.annual=Math.max(0,b.annual+dir*hrs);
+  else if(a.type==='加班') b.comp=Math.max(0,b.comp+dir*(-hrs)); // 加班核准=補休增加（dir=-1 時 +hrs）
 }
 window.approve=(id,ok)=>{ const a=store.approvals.find(x=>x.id===id); const was=a.state; a.state=ok?'已核准':'已退回';
   if(ok && was!=='已核准') applyLeaveBalance(a,-1);   // 核准→扣特休/加班→補休+
