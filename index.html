@@ -214,6 +214,8 @@ const MODS=[
   {k:'H', tag:'H', name:'墊付款', en:'Advance Payment', view:'employee', approve:'supervisor'},
   {grp:'人資 / 薪酬'},
   {k:'M', tag:'M', name:'部門管理', en:'Departments', view:'hr', manage:'hr'},
+  {k:'O', tag:'O', name:'教育訓練', en:'Training', view:'employee', manage:'hr'},
+  {k:'P', tag:'P', name:'福利管理', en:'Benefits', view:'employee', manage:'hr'},
   {k:'G', tag:'G', name:'考績獎金', en:'Performance', view:'supervisor', config:'hr'},
   {k:'I', tag:'I', name:'加退保', en:'Insurance', view:'hr'},
   {k:'J', tag:'J', name:'薪資計算', en:'Payroll', view:'hr'},
@@ -284,7 +286,7 @@ let ADVANCES=[
 ];
 const LS='hrm_demo_state_v10';
 // 每租戶獨立的資料鍵（切換租戶只看該租戶資料）
-const TENANT_KEYS=['emps','depts','deptMap','sales','approvals','shifts','leaveBal','scores','bonus','attendance','pendingEmps','posts','payItems','shiftDefs','apprItems','punchCfg','attendCfg','insCfg','payrollCfg','leaveCfg','customFields','perm','clock','notifs'];
+const TENANT_KEYS=['emps','depts','deptMap','sales','approvals','shifts','leaveBal','scores','bonus','attendance','pendingEmps','posts','payItems','shiftDefs','apprItems','punchCfg','attendCfg','insCfg','payrollCfg','leaveCfg','customFields','perm','clock','notifs','courses','trainLog','benefits','benefitEnroll','payPeriod'];
 function freshLeaveCfg(){ const o={}; LEAVE_TYPES.forEach(l=>o[l.k]=l.on); return o; }
 function freshPerm(){ const p={}; ['employee','supervisor','hr','admin'].forEach(r=>p[r]={}); return p; }
 function defaultPayItems(){ return [
@@ -301,6 +303,11 @@ function defaultPayItems(){ return [
 // 一個租戶的預設資料（新客戶剛購買：設定齊全但無員工/部門/紀錄）
 function defaultTenantData(){ return {
   emps:[], depts:[], deptMap:{}, sales:[], approvals:[], shifts:{}, leaveBal:{}, scores:{}, bonus:{}, attendance:{}, pendingEmps:[], posts:[], clock:{}, notifs:[],
+  courses:[{id:'c1',name:'食品安全衛生教育訓練',hours:3,date:'2026/07/15',required:true},{id:'c2',name:'新人職前訓練',hours:8,date:'依到職',required:true},{id:'c3',name:'消防安全講習',hours:2,date:'2026/08/01',required:false}],
+  trainLog:{}, // {empId:{courseId:'完成'|'未完成'|'報名'}}
+  benefits:[{id:'b1',name:'三節獎金',type:'現金',val:3000,note:'端午/中秋/春節各發'},{id:'b2',name:'生日禮金',type:'現金',val:1000,note:'當月壽星'},{id:'b3',name:'員工健康檢查',type:'服務',val:0,note:'每年一次'},{id:'b4',name:'團體保險',type:'保險',val:0,note:'意外+醫療'},{id:'b5',name:'年終尾牙',type:'活動',val:0,note:'全員'}],
+  benefitEnroll:{}, // {empId:[benefitId,...]}
+  payPeriod:'2026-07',
   leaveCfg:freshLeaveCfg(), perm:freshPerm(), customFields:[{label:'制服尺寸'},{label:'車牌號碼'}],
   shiftDefs:[{k:'早',start:'08:00',end:'16:00',c:'p-ok'},{k:'中',start:'11:00',end:'19:00',c:'p-hold'},{k:'晚',start:'14:00',end:'22:00',c:'p-info'},{k:'休',start:'',end:'',c:'p-gray'}],
   punchCfg:{method:'GPS',allowOutside:false,needPhoto:false,roundTo:1,dept:{}},
@@ -855,7 +862,10 @@ function attend(empId){ if(!store.attendance[empId]){ const seed=[...empId].redu
   return store.attendance[empId]; }
 
 // E 加班請假（真的送單 → 進 F 簽核佇列；核准回寫餘額）
-function leaveBal(empId){ if(!store.leaveBal[empId]){ const e=EMP.find(x=>x.id===empId); const pt=e&&e.partTime; store.leaveBal[empId]={annual:pt?28:56,comp:10}; } return store.leaveBal[empId]; }
+// 勞基法特休（依年資，回小時）：6m→3天,1y→7,2y→10,3-4y→14,5-9y→15,10y+→15+每年1天上限30天
+function statutoryAnnualDays(e){ if(!e||!e.start) return 0; const s=new Date(e.start),n=new Date(2026,6,5); const days=Math.floor((n-s)/86400000)+(+e.seniorityAdj||0); const y=days/365;
+  if(y<0.5)return 0; if(y<1)return 3; if(y<2)return 7; if(y<3)return 10; if(y<5)return 14; if(y<10)return 15; return Math.min(30,15+Math.floor(y-9)); }
+function leaveBal(empId){ if(!store.leaveBal[empId]){ const e=EMP.find(x=>x.id===empId); let annual=statutoryAnnualDays(e)*8; if(e&&e.partTime) annual=Math.round(annual/2); store.leaveBal[empId]={annual,comp:10}; } return store.leaveBal[empId]; }
 PANELS.E=(me)=>{
   const cfg=can('hr');
   const bal=leaveBal(me.id);
@@ -1062,6 +1072,7 @@ function calcPay(e){
   return {e,earn,deduct,net:earn-deduct,lines,taxable,insured};
 }
 window.setPayroll=(k,v)=>{ store.payrollCfg[k]=v; save(); toast('薪資總設定已更新'); render(); };
+window.setPayPeriod=(v)=>{ store.payPeriod=v; save(); toast('已切換薪資期別：'+v); render(); };
 window.payItemDetail=(id)=>{ const i=store.payItems.find(x=>x.id===id); if(i.type==='deduct'&&i.sys){ toast('系統扣項細節由保險設置控管'); return; }
   modal(i.name+' · 細節設定',`
   <label style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">是否課稅（計入所得）<span class="switch"><input type="checkbox" ${i.tax?'checked':''} onchange="setItemFlag('${id}','tax',this.checked)"><span></span></span></label>
@@ -1094,9 +1105,9 @@ PANELS.J=(me)=>{
     <label style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--line)">代扣所得稅<span class="switch"><input type="checkbox" ${store.payrollCfg.taxWithhold?'checked':''} onchange="setPayroll('taxWithhold',this.checked)"><span></span></span></label>
     <p class="note" style="margin-top:8px">進位方式、補充保費、福利金、課稅開關——全域套用到薪資計算。</p></div>`:'';
   return page('J','薪資計算','Payroll Engine',cfgCard+payCfgCard+`
-  <div class="between" style="margin:4px 0 12px"><div class="row"><span class="pill p-info">薪資期別 2026/06</span><span class="pill p-gray">串接打卡工時 · 加班 · 請假 · 墊付</span></div>
+  <div class="between" style="margin:4px 0 12px"><div class="row"><span class="pill p-info">薪資期別</span><select class="fld" style="width:auto;padding:5px 8px" onchange="setPayPeriod(this.value)">${['2026-05','2026-06','2026-07','2026-08'].map(p=>`<option ${store.payPeriod===p?'selected':''}>${p}</option>`).join('')}</select><span class="pill p-gray">串接打卡工時·加班·請假·墊付</span></div>
     <div class="row"><button class="btn sm ghost" onclick="exportCSV('payroll')">匯出 CSV</button><button class="btn sm" onclick="toast('已依現有薪資項目重算 '+${pays.length}+' 人')">⚙ 一鍵跑薪資</button></div></div>
-  <div class="card"><h2>💰 整月薪資總表（${pays.length} 人）</h2>
+  <div class="card"><h2>💰 ${store.payPeriod} 薪資總表（${pays.length} 人）</h2>
     <div class="tbl-wrap"><table><tr><th>姓名</th><th class="num">應發</th><th class="num">應扣</th><th class="num">實發</th><th></th></tr>
     ${pays.map(p=>`<tr><td>${p.e.name}</td><td class="num">${nt(p.earn)}</td><td class="num" style="color:var(--warn)">-${nt(p.deduct)}</td><td class="num"><b>${nt(p.net)}</b></td><td><button class="btn sm ghost" onclick="payslip('${p.e.id}')">薪資條</button></td></tr>`).join('')}</table></div>
     <div class="between" style="margin-top:12px"><b>本月應付款合計</b><b style="color:var(--brand);font-size:18px">${nt(total)}</b></div>
@@ -1117,7 +1128,7 @@ window.saveNewPayItem=()=>{ const name=document.getElementById('npName').value.t
   store.payItems.push({id:'pi'+nextSeq(),name,type:document.getElementById('npType').value,mode:'fixed',val:parseInt(document.getElementById('npVal').value)||0,on:true}); save(); closeModal(); toast('已新增薪資項目「'+name+'」'); render(); };
 window.payslip=(id)=>{ const e=EMP.find(x=>x.id===id); const p=calcPay(e);
   modal(e.name+' · 電子薪資條 2026/06',`<div class="phone" style="border-width:0;box-shadow:none"><div class="scr" style="background:#fff">
-  <div class="between"><b>薪資條 · 2026/06</b><span class="pill p-gray">🔒 加密</span></div>
+  <div class="between"><b>薪資條 · ${store.payPeriod}</b><span class="pill p-gray">🔒 加密</span></div>
   <div class="card" style="margin:10px 0"><b>${e.name} · ${storeName(e.store)}</b>
     <div style="margin-top:8px">${p.lines.map(l=>`<div class="between" style="font-size:13px"><span style="${l.type==='deduct'?'color:var(--warn)':''}">${l.name}</span><span style="${l.type==='deduct'?'color:var(--warn)':''}">${l.type==='deduct'?'-':''}${nt(l.val)}</span></div>`).join('')}</div>
     <div class="between" style="border-top:1px solid var(--line);padding-top:6px;margin-top:6px"><span>應發 ${nt(p.earn)} · 應扣 ${nt(p.deduct)}</span></div>
@@ -1181,6 +1192,59 @@ window.delDept=(id)=>{ const d=store.depts.find(x=>x.id===id); const kids=deptCh
   deptChildren(id).forEach(c=>c.parent=d.parent); deptMembers(id).forEach(e=>delete store.deptMap[e.id]);
   store.depts=store.depts.filter(x=>x.id!==id); save(); toast('已裁撤「'+d.name+'」'); render(); };
 window.assignMember=(eid,did,v)=>{ if(v) store.deptMap[eid]=did; else if(store.deptMap[eid]===did) delete store.deptMap[eid]; save(); };
+
+// O 教育訓練
+function trainStatus(eid,cid){ return (store.trainLog[eid]||{})[cid]||'未報名'; }
+PANELS.O=(me)=>{
+  const cfg=can('hr');
+  const cfgCard=cfg?`<div class="card"><div class="between"><h2 style="margin:0">🎓 課程管理 ${roleChip('hr')}</h2><button class="btn sm" onclick="addCourse()">＋ 新增課程</button></div>
+    <div class="tbl-wrap" style="margin-top:12px"><table><tr><th>課程</th><th class="num">時數</th><th>時間</th><th>必修</th><th class="num">已完成</th><th></th></tr>
+    ${store.courses.map(c=>{ const done=EMP.filter(e=>e.state==='在職'&&trainStatus(e.id,c.id)==='完成').length;
+      return `<tr><td>${c.name}</td><td class="num">${c.hours}h</td><td>${c.date}</td><td>${c.required?'<span class="pill p-warn">必修</span>':'<span class="pill p-gray">選修</span>'}</td><td class="num">${done}/${EMP.filter(e=>e.state==='在職').length}</td><td><button class="btn sm warn" onclick="delCourse('${c.id}')">🗑</button></td></tr>`;}).join('')}</table></div>
+    <p class="note" style="margin-top:12px">課程可自訂（食安/新人/消防…）；下方指派員工完成狀態，法遵教育訓練時數自動累計。</p></div>`:'';
+  const roster=EMP.filter(e=>e.state==='在職');
+  const gridCard=cfg?`<div class="card"><h2>📋 員工完訓狀態</h2>
+    <div class="tbl-wrap"><table><tr><th>員工</th>${store.courses.map(c=>`<th>${c.name}</th>`).join('')}<th class="num">完訓時數</th></tr>
+    ${roster.map(e=>{ let h=0; return `<tr><td style="white-space:nowrap">${e.name}</td>${store.courses.map(c=>{ const s=trainStatus(e.id,c.id); if(s==='完成')h+=c.hours; return `<td><select class="fld" style="width:88px;padding:4px" onchange="setTrain('${e.id}','${c.id}',this.value)"><option ${s==='未報名'?'selected':''}>未報名</option><option ${s==='報名'?'selected':''}>報名</option><option ${s==='完成'?'selected':''}>完成</option></select></td>`;}).join('')}<td class="num"><b>${h}h</b></td></tr>`;}).join('')}</table></div>
+    <p class="note" style="margin-top:10px">完訓時數可匯出勞檢教育訓練紀錄。</p></div>`:`<div class="card"><h2>🎓 我的教育訓練</h2>
+    <div class="tbl-wrap"><table><tr><th>課程</th><th class="num">時數</th><th>時間</th><th>狀態</th><th></th></tr>
+    ${store.courses.map(c=>{ const s=trainStatus(me.id,c.id); return `<tr><td>${c.name}${c.required?' <span class="pill p-warn" style="font-size:10px">必修</span>':''}</td><td class="num">${c.hours}h</td><td>${c.date}</td><td><span class="pill ${s==='完成'?'p-ok':s==='報名'?'p-hold':'p-gray'}">${s}</span></td><td>${s!=='完成'?`<button class="btn sm" onclick="setTrain('${me.id}','${c.id}','${s==='未報名'?'報名':'完成'}')">${s==='未報名'?'報名':'標記完成'}</button>`:''}</td></tr>`;}).join('')}</table></div>
+    <p class="note" style="margin-top:10px">員工可自行報名/標記完訓；必修課程未完成會提醒。</p></div>`;
+  return page('O','教育訓練','Training & Development',cfgCard+gridCard);
+};
+window.setTrain=(eid,cid,v)=>{ store.trainLog[eid]=store.trainLog[eid]||{}; store.trainLog[eid][cid]=v; if(v==='完成'){ const c=store.courses.find(x=>x.id===cid); notify('🎓','完訓紀錄', (EMP.find(e=>e.id===eid)||{}).name+' 完成「'+(c?c.name:'')+'」'); } save(); toast('訓練狀態已更新'); render(); };
+window.addCourse=()=>{ modal('新增課程',`<div class="field"><label class="f">課程名稱</label><input id="coName" placeholder="例：CPR急救訓練"></div>
+  <div class="grid g2"><div class="field"><label class="f">時數</label><input id="coHours" type="number" value="2"></div><div class="field"><label class="f">時間</label><input id="coDate" placeholder="2026/08/01"></div></div>
+  <label style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">必修<span class="switch"><input type="checkbox" id="coReq"><span></span></span></label>
+  <div class="row"><button class="btn" onclick="saveCourse()">新增</button><button class="btn ghost" onclick="closeModal()">取消</button></div>`); };
+window.saveCourse=()=>{ const name=document.getElementById('coName').value.trim(); if(!name){ toast('請輸入名稱'); return; } store.courses.push({id:'c'+nextSeq(),name,hours:+document.getElementById('coHours').value||0,date:document.getElementById('coDate').value||'待定',required:document.getElementById('coReq').checked}); save(); closeModal(); toast('課程已新增'); render(); };
+window.delCourse=(id)=>{ if(!confirm('刪除此課程？')) return; store.courses=store.courses.filter(x=>x.id!==id); save(); toast('已刪除'); render(); };
+
+// P 福利管理
+PANELS.P=(me)=>{
+  const cfg=can('hr');
+  const enrolled=(eid)=>store.benefitEnroll[eid]||[];
+  const cfgCard=cfg?`<div class="card"><div class="between"><h2 style="margin:0">🎁 福利項目設定 ${roleChip('hr')}</h2><button class="btn sm" onclick="addBenefit()">＋ 新增福利</button></div>
+    <div class="tbl-wrap" style="margin-top:12px"><table><tr><th>福利</th><th>類型</th><th class="num">金額</th><th>說明</th><th class="num">參與</th><th></th></tr>
+    ${store.benefits.map(b=>`<tr><td>${b.name}</td><td><span class="pill p-info">${b.type}</span></td><td class="num">${b.val?nt(b.val):'—'}</td><td style="white-space:normal">${b.note}</td><td class="num">${EMP.filter(e=>e.state==='在職'&&enrolled(e.id).includes(b.id)).length}</td><td><button class="btn sm warn" onclick="delBenefit('${b.id}')">🗑</button></td></tr>`).join('')}</table></div>
+    <p class="note" style="margin-top:12px">福利可自訂（三節獎金/生日禮金/健檢/團保…）；現金類可設金額，發放時併入薪資。下方指派員工參與。</p></div>`:'';
+  const roster=EMP.filter(e=>e.state==='在職');
+  const enrollCard=cfg?`<div class="card"><h2>📋 員工福利參與</h2>
+    <div class="tbl-wrap"><table><tr><th>員工</th>${store.benefits.map(b=>`<th>${b.name}</th>`).join('')}</tr>
+    ${roster.map(e=>`<tr><td style="white-space:nowrap">${e.name}</td>${store.benefits.map(b=>`<td style="text-align:center"><label class="switch"><input type="checkbox" ${enrolled(e.id).includes(b.id)?'checked':''} onchange="toggleBenefit('${e.id}','${b.id}',this.checked)"><span></span></label></td>`).join('')}</tr>`).join('')}</table></div>
+    <p class="note" style="margin-top:10px">勾選＝該員工享有此福利；三節/生日獎金可在薪資計算發放。</p></div>`:`<div class="card"><h2>🎁 我的福利</h2>
+    <div class="tbl-wrap"><table><tr><th>福利</th><th>類型</th><th class="num">金額</th><th>說明</th></tr>
+    ${store.benefits.filter(b=>enrolled(me.id).includes(b.id)||true).map(b=>`<tr><td>${b.name}</td><td>${b.type}</td><td class="num">${b.val?nt(b.val):'—'}</td><td style="white-space:normal">${b.note}</td></tr>`).join('')}</table></div>
+    <p class="note" style="margin-top:10px">公司提供的福利項目一覽。</p></div>`;
+  return page('P','福利管理','Benefits',cfgCard+enrollCard);
+};
+window.toggleBenefit=(eid,bid,v)=>{ store.benefitEnroll[eid]=store.benefitEnroll[eid]||[]; if(v){ if(!store.benefitEnroll[eid].includes(bid)) store.benefitEnroll[eid].push(bid); } else store.benefitEnroll[eid]=store.benefitEnroll[eid].filter(x=>x!==bid); save(); };
+window.addBenefit=()=>{ modal('新增福利',`<div class="field"><label class="f">福利名稱</label><input id="beName" placeholder="例：交通補助"></div>
+  <div class="grid g2"><div class="field"><label class="f">類型</label><select class="fld" id="beType"><option>現金</option><option>服務</option><option>保險</option><option>活動</option><option>補助</option></select></div><div class="field"><label class="f">金額（現金類）</label><input id="beVal" type="number" value="0"></div></div>
+  <div class="field"><label class="f">說明</label><input id="beNote"></div>
+  <div class="row"><button class="btn" onclick="saveBenefit()">新增</button><button class="btn ghost" onclick="closeModal()">取消</button></div>`); };
+window.saveBenefit=()=>{ const name=document.getElementById('beName').value.trim(); if(!name){ toast('請輸入名稱'); return; } store.benefits.push({id:'b'+nextSeq(),name,type:document.getElementById('beType').value,val:+document.getElementById('beVal').value||0,note:document.getElementById('beNote').value}); save(); closeModal(); toast('福利已新增'); render(); };
+window.delBenefit=(id)=>{ if(!confirm('刪除此福利？')) return; store.benefits=store.benefits.filter(x=>x.id!==id); store.benefits.length; save(); toast('已刪除'); render(); };
 
 // N 布告欄
 PANELS.N=(me)=>{
@@ -1348,5 +1412,3 @@ boot();
 </script>
 </body>
 </html>
-
-<!-- rebuild 1783254199 -->
