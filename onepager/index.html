@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>益循 HRM · 產品一頁通</title>
+<meta name="description" content="益循 HRM 一頁產品概覽：LINE 人資系統、模組總覽、核心差異化、方案價格——可直接列印/存 PDF 給客戶。">
+<style>
+:root{
+  --brand:#1f8a4c;--brand-d:#12673a;--brand-l:#e7f4ec;--amber:#f2a900;
+  --ink:#152019;--muted:#5a6b61;--line:#e2ebe5;--ground:#ffffff;--ground-2:#f4f9f6;--card:#ffffff;
+  --sh:0 1px 2px rgba(20,50,35,.05),0 6px 18px rgba(20,50,35,.06);
+  --sans:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media(prefers-color-scheme:dark){:root{--ink:#e8f1eb;--muted:#9db0a5;--line:#25332c;--ground:#0d1411;--ground-2:#101a15;--card:#141e18;--brand-l:#16281e;--sh:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.35)}}
+:root[data-theme="dark"]{--ink:#e8f1eb;--muted:#9db0a5;--line:#25332c;--ground:#0d1411;--ground-2:#101a15;--card:#141e18;--brand-l:#16281e;--sh:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.35)}
+:root[data-theme="light"]{--ink:#152019;--muted:#5a6b61;--line:#e2ebe5;--ground:#ffffff;--ground-2:#f4f9f6;--card:#ffffff;--brand-l:#e7f4ec;--sh:0 1px 2px rgba(20,50,35,.05),0 6px 18px rgba(20,50,35,.06)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden}
+body{font-family:var(--sans);color:var(--ink);background:var(--ground-2);line-height:1.55;font-size:15px;-webkit-font-smoothing:antialiased}
+a{color:var(--brand);text-decoration:none}
+h1,h2,h3{margin:0;line-height:1.2}
+.bar{max-width:900px;margin:0 auto;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.bar .actions{display:flex;gap:8px}
+.btn{border:none;cursor:pointer;font-family:inherit;font-weight:800;font-size:14px;padding:9px 16px;border-radius:10px;transition:transform .1s}
+.btn:active{transform:translateY(1px)}
+.btn.p{background:linear-gradient(135deg,var(--brand),var(--brand-d));color:#fff;box-shadow:0 6px 16px rgba(18,103,58,.25)}
+.btn.g{background:var(--card);color:var(--ink);border:1.5px solid var(--line)}
+.sheet{max-width:900px;margin:0 auto 30px;background:var(--card);box-shadow:var(--sh);border-radius:14px;overflow:hidden}
+.hd{background:linear-gradient(135deg,var(--brand),var(--brand-d));color:#fff;padding:24px 30px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.hd .logo{display:flex;align-items:center;gap:11px}
+.hd .mark{width:44px;height:44px;border-radius:11px;background:rgba(255,255,255,.18);display:grid;place-items:center;font-size:24px;font-weight:900}
+.hd h1{font-size:23px;font-weight:900}
+.hd .tag{font-size:13.5px;opacity:.92;margin-top:2px}
+.hd .qr{text-align:center;font-size:11px;opacity:.9}
+.hd .qrbox{width:66px;height:66px;border-radius:9px;background:#fff;display:grid;place-items:center;font-size:26px;margin-bottom:3px}
+.pad{padding:22px 30px}
+.oneliner{font-size:17px;font-weight:700;text-align:center;margin:2px 0 4px}
+.oneliner b{color:var(--brand)}
+.sub{text-align:center;color:var(--muted);font-size:14px;margin-bottom:18px}
+.sec-t{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--brand);margin:20px 0 10px;padding-bottom:5px;border-bottom:2px solid var(--brand-l);display:flex;align-items:center;gap:6px}
+.mods{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px 22px}
+.mgrp{margin-bottom:6px}
+.mgrp h4{font-size:12.5px;color:var(--muted);margin:0 0 3px;font-weight:800}
+.mgrp .it{font-size:13px;padding:2px 0;display:flex;gap:6px;align-items:baseline}
+.mgrp .it b{color:var(--brand);font-size:11px}
+.diff{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dcard{background:var(--ground-2);border-radius:10px;padding:12px 14px}
+.dcard .h{font-weight:800;font-size:14px;display:flex;gap:7px;align-items:center}
+.dcard .b{font-size:12.8px;color:var(--muted);margin-top:3px}
+.plans{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.plan{border:1.5px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+.plan.pop{border-color:var(--brand);background:var(--brand-l)}
+.plan .n{font-size:13px;font-weight:800;color:var(--brand)}
+.plan .p{font-size:22px;font-weight:900;margin:4px 0}.plan .p small{font-size:12px;color:var(--muted);font-weight:600}
+.plan .d{font-size:11.5px;color:var(--muted)}
+.foot{background:var(--ground-2);padding:16px 30px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
+.foot .cta{font-weight:800;color:var(--ink)}
+.pills{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:6px}
+.pill{font-size:11.5px;font-weight:700;background:var(--brand-l);color:var(--brand-d);padding:3px 11px;border-radius:20px}
+@media(max-width:640px){.mods,.plans{grid-template-columns:1fr 1fr}.diff{grid-template-columns:1fr}.hd{padding:20px}}
+@media print{
+  body{background:#fff;font-size:12.5px}
+  .bar{display:none}
+  .sheet{box-shadow:none;margin:0;border-radius:0;max-width:100%}
+  .sec-t{margin:12px 0 7px}
+  .pad{padding:14px 20px}
+  @page{margin:12mm}
+}
+</style>
+</head>
+<body>
+<div class="bar">
+  <div style="font-weight:800;color:var(--muted);font-size:13px">益循 HRM · 產品一頁通（可列印給客戶）</div>
+  <div class="actions">
+    <button class="btn g" onclick="toggleTheme()" id="tb">🌙</button>
+    <button class="btn p" onclick="window.print()">🖨 列印 / 存 PDF</button>
+  </div>
+</div>
+
+<div class="sheet">
+  <div class="hd">
+    <div class="logo"><div class="mark">益</div><div>
+      <h1>益循 HRM</h1><div class="tag">餐飲業專用 · LINE 人資系統</div>
+    </div></div>
+    <div class="qr"><div class="qrbox">📱</div>掃碼試玩</div>
+  </div>
+  <div class="pad">
+    <div class="oneliner">一條 <b>LINE</b>，管好整間店的人資。</div>
+    <div class="sub">員工用 LINE 就能打卡、看班表、請假、領薪資條；老闆一支手機管多店。不裝 App、不買機器。</div>
+    <div class="pills"><span class="pill">📍 GPS 定位打卡</span><span class="pill">💰 薪資勞健保自動算</span><span class="pill">🏪 多分店集中管理</span><span class="pill">🔔 LINE 即時推播</span></div>
+
+    <div class="sec-t">🧩 完整模組（21 項，客戶可自行設定）</div>
+    <div class="mods">
+      <div class="mgrp"><h4>日常操作</h4>
+        <div class="it"><b>R</b>我的專區（自助）</div>
+        <div class="it"><b>B</b>定位打卡</div>
+        <div class="it"><b>C</b>排班／換班</div>
+        <div class="it"><b>E</b>請假／加班</div>
+        <div class="it"><b>F</b>線上簽核</div>
+        <div class="it"><b>H</b>墊付款</div>
+        <div class="it"><b>D</b>業績回報</div>
+        <div class="it"><b>N</b>布告欄</div>
+      </div>
+      <div class="mgrp"><h4>人資 / 薪酬</h4>
+        <div class="it"><b>A</b>員工基本資料</div>
+        <div class="it"><b>M</b>部門組織</div>
+        <div class="it"><b>O</b>教育訓練</div>
+        <div class="it"><b>P</b>福利管理</div>
+        <div class="it"><b>G</b>考績獎金</div>
+        <div class="it"><b>I</b>加退保級距</div>
+        <div class="it"><b>J</b>薪資計算</div>
+        <div class="it"><b>K</b>電子薪資條</div>
+      </div>
+      <div class="mgrp"><h4>管理 / 法遵</h4>
+        <div class="it"><b>Q</b>勞檢報表匯出</div>
+        <div class="it"><b>L</b>數據儀表板</div>
+        <div class="it"><b>⚙</b>系統設置</div>
+        <div class="it"><b>🔔</b>通知中心</div>
+        <div class="it"><b>✍</b>文件電子簽章</div>
+      </div>
+    </div>
+
+    <div class="sec-t">⭐ 核心差異化</div>
+    <div class="diff">
+      <div class="dcard"><div class="h">⚖️ 真實勞健保計算</div><div class="b">投保級距、加班倍率（1.34/1.67/2.67）、補充保費、部分工時、眷屬加保——依 2026 法定值自動算，特休依年資自動給假。</div></div>
+      <div class="dcard"><div class="h">🏪 多租戶／多分店</div><div class="b">一套系統服務多家店，資料完全隔離、權限分四級（員工/主管/人資/管理員），總部集中管理。</div></div>
+      <div class="dcard"><div class="h">⏱ 打卡即算考勤</div><div class="b">用實際打卡時間對排定班別，即時算遲到/早退/加班，出勤異常自動偵測並通知。</div></div>
+      <div class="dcard"><div class="h">🗂 勞檢一鍵備齊</div><div class="b">出勤/加班/教育訓練/投保級距/薪資清冊，CSV 匯出＋四合一列印，勞動檢查不再手忙腳亂。</div></div>
+      <div class="dcard"><div class="h">📱 零硬體・零 App</div><div class="b">全部在 LINE 裡完成，員工不用學新系統、公司不用買打卡機。</div></div>
+      <div class="dcard"><div class="h">⚙️ 客戶自助設定</div><div class="b">班別、假別、薪資科目、GPS 範圍、權限……都是「資料可設定」而非寫死，接新店不用改程式。</div></div>
+    </div>
+
+    <div class="sec-t">💳 方案價格（示範）</div>
+    <div class="plans">
+      <div class="plan"><div class="n">試用</div><div class="p">NT$0<small>/14天</small></div><div class="d">單店・10人・全功能</div></div>
+      <div class="plan pop"><div class="n">標準 ⭐</div><div class="p">NT$1,280<small>/店/月</small></div><div class="d">單店不限人數・含薪資勞健保</div></div>
+      <div class="plan"><div class="n">企業</div><div class="p">洽談<small>/多店</small></div><div class="d">連鎖・總部管理・客製</div></div>
+    </div>
+  </div>
+  <div class="foot">
+    <div><span class="cta">立即體驗：</span><a href="../?x=1">線上試玩系統</a> · <a href="../sales/">完整介紹</a></div>
+    <div>益循生活股份有限公司（示範）· 免費試用 14 天，不需信用卡</div>
+  </div>
+</div>
+
+<script>
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);document.getElementById('tb').textContent=t==='dark'?'☀️':'🌙';try{localStorage.setItem('yx_theme',t)}catch(e){}}
+function toggleTheme(){var c=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');applyTheme(c==='dark'?'light':'dark');}
+try{var s=localStorage.getItem('yx_theme');if(s)applyTheme(s);else document.getElementById('tb').textContent=matchMedia('(prefers-color-scheme:dark)').matches?'☀️':'🌙';}catch(e){}
+</script>
+</body>
+</html>
