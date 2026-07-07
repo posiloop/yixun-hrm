@@ -178,7 +178,15 @@
   <div class="body">
     <div class="scrim" id="scrim"></div>
     <nav class="nav" id="nav"></nav>
-    <main class="main"><div class="wrap" id="content"></div></main>
+    <main class="main"><div class="wrap" id="content"></div>
+      <div style="max-width:1100px;margin:26px auto 0;padding:16px 4px;border-top:1px solid var(--line);display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:center;font-size:13px;color:var(--muted)">
+        <span style="font-weight:700">益循 HRM 產品站：</span>
+        <a href="sales/" style="color:var(--brand);text-decoration:none">🛒 銷售頁</a>
+        <a href="line/" style="color:var(--brand);text-decoration:none">📱 LINE 官方帳號規劃</a>
+        <a href="marketing/" style="color:var(--brand);text-decoration:none">📣 FB/IG 社群內容包</a>
+        <span style="opacity:.6">· 這裡是可操作的系統試玩</span>
+      </div>
+    </main>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -204,6 +212,7 @@ const RANK={employee:1,supervisor:2,hr:3,admin:4};
 const MODS=[
   {k:'home', tag:'★', name:'首頁 / 我的', en:'My Home', view:'employee'},
   {grp:'日常操作'},
+  {k:'R', tag:'R', name:'我的專區', en:'My Self-Service', view:'employee'},
   {k:'A', tag:'A', name:'員工基本資料', en:'Employee Profile', view:'employee', manage:'hr', config:'hr'},
   {k:'N', tag:'N', name:'布告欄', en:'Bulletin', view:'employee', manage:'supervisor'},
   {k:'B', tag:'B', name:'定位打卡', en:'GPS Check-in', view:'employee'},
@@ -930,6 +939,44 @@ window.submitLeave=(empId)=>{ const e=EMP.find(x=>x.id===empId); const type=docu
   store.approvals.push({id:nextSeq(),empId,who:e.name,store:e.store,type,detail:reason||type+' 申請',hrs,date,state:'待核',kind});
   notify('📝','新簽核待處理', e.name+' 送出「'+type+' '+hrs+'h」，待主管核准');
   save(); toast('「'+type+' '+hrs+'h」已送出，進主管簽核'); render(); };
+
+// R 我的專區（員工自助整合：薪資條歷史／文件／訓練／假別／申請狀態）
+PANELS.R=(me)=>{
+  const bal=leaveBal(me.id); const at=attend(me.id);
+  const docs=me.docs||[]; const pendDoc=docs.filter(d=>d.sign==='待簽').length;
+  const myReq=store.approvals.filter(a=>a.empId===me.id);
+  const periods=['2026-05','2026-06','2026-07']; const base=calcPay(me);
+  // 薪資條歷史（示範：各期用 calcPay 基礎值±小幅波動呈現）
+  const payHist=periods.map((p,i)=>{ const factor=[0.97,1,1.02][i]; return {p,net:Math.round(base.net*factor),earn:Math.round(base.earn*factor),deduct:base.deduct}; });
+  const trainRows=store.courses.map(c=>({c,s:trainStatus(me.id,c.id)}));
+  const doneH=trainRows.filter(x=>x.s==='完成').reduce((s,x)=>s+x.c.hours,0);
+  const stCls=s=>s==='已核准'?'p-ok':s==='待核'?'p-hold':s==='已退回'?'p-warn':'p-gray';
+  return page('R','我的專區','My Self-Service',`
+  <div class="grid g4" style="margin-bottom:14px">
+    <div class="stat"><div class="k">特休餘額</div><div class="v">${bal.annual}<span style="font-size:14px">h</span></div><div class="d">補休 ${bal.comp}h</div></div>
+    <div class="stat"><div class="k">本月出勤</div><div class="v">${Math.round(at.days/22*1000)/10}%</div><div class="d">遲到 ${at.late} 次</div></div>
+    <div class="stat"><div class="k">待簽文件</div><div class="v">${pendDoc}</div><div class="d">${docs.length} 份文件</div></div>
+    <div class="stat"><div class="k">完訓時數</div><div class="v">${doneH}<span style="font-size:14px">h</span></div><div class="d">${trainRows.filter(x=>x.s==='完成').length}/${store.courses.length} 門</div></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><div class="between"><h2 style="margin:0">💰 我的薪資條（歷史）</h2><button class="btn sm ghost" onclick="go('K')">開啟薪資條 →</button></div>
+      <div class="tbl-wrap" style="margin-top:10px"><table><tr><th>期別</th><th class="num">應發</th><th class="num">應扣</th><th class="num">實發</th></tr>
+      ${payHist.map(h=>`<tr><td>${h.p}</td><td class="num">${nt(h.earn)}</td><td class="num">${nt(h.deduct)}</td><td class="num" style="color:var(--brand);font-weight:700">${nt(h.net)}</td></tr>`).join('')}</table></div>
+      <p class="note" style="margin-top:10px">薪資條加密僅本人可查；發放時 LINE 推播通知。</p></div>
+    <div class="card"><div class="between"><h2 style="margin:0">📄 我的文件</h2><span class="pill ${pendDoc?'p-hold':'p-ok'}">${pendDoc?pendDoc+' 份待簽':'皆已簽'}</span></div>
+      <div class="tbl-wrap" style="margin-top:10px"><table><tr><th>文件</th><th>類別</th><th>簽署</th><th></th></tr>
+      ${docs.length?docs.map(d=>`<tr><td>${d.name}</td><td>${d.category}</td><td><span class="pill ${d.sign==='已簽'?'p-ok':d.sign==='待簽'?'p-hold':'p-gray'}">${d.sign}</span></td><td>${d.sign==='待簽'?`<button class="btn sm" onclick="signDoc('${me.id}','${d.id}')">簽署</button>`:''}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:12px">目前沒有文件</td></tr>'}</table></div></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><div class="between"><h2 style="margin:0">🎓 我的教育訓練</h2><button class="btn sm ghost" onclick="go('O')">前往 →</button></div>
+      <div class="tbl-wrap" style="margin-top:10px"><table><tr><th>課程</th><th class="num">時數</th><th>狀態</th><th></th></tr>
+      ${trainRows.map(x=>`<tr><td>${x.c.name}${x.c.required?' <span class="pill p-warn" style="font-size:10px">必修</span>':''}</td><td class="num">${x.c.hours}h</td><td><span class="pill ${x.s==='完成'?'p-ok':x.s==='報名'?'p-hold':'p-gray'}">${x.s}</span></td><td>${x.s!=='完成'?`<button class="btn sm" onclick="setTrain('${me.id}','${x.c.id}','${x.s==='未報名'?'報名':'完成'}')">${x.s==='未報名'?'報名':'完訓'}</button>`:''}</td></tr>`).join('')}</table></div></div>
+    <div class="card"><div class="between"><h2 style="margin:0">📋 我的申請狀態</h2><button class="btn sm ghost" onclick="go('E')">新申請 →</button></div>
+      <div class="tbl-wrap" style="margin-top:10px"><table><tr><th>類別</th><th>內容</th><th>狀態</th></tr>
+      ${myReq.length?myReq.slice().reverse().map(a=>`<tr><td><span class="pill p-info">${a.type}</span></td><td style="white-space:normal">${a.detail||''}${a.hrs?(' · '+a.hrs+'h'):''}</td><td><span class="pill ${stCls(a.state)}">${a.state}</span></td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:12px">尚無申請紀錄</td></tr>'}</table></div>
+      <p class="note" style="margin-top:10px">請假／加班／換班／墊付款的申請與簽核進度，一站掌握。</p></div>
+  </div>`);
+};
 
 // F 考勤簽核（真的能核准/退回/撤銷/刪除）
 PANELS.F=(me)=>{
