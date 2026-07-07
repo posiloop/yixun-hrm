@@ -263,18 +263,18 @@ label.fl{font-size:13px;font-weight:700;display:block;margin-bottom:5px}
       <button class="btn ghost" onclick="openBuy('trial')">開始試用</button>
     </div>
     <div class="plan pop">
-      <div class="tag">最受歡迎</div>
+      <div class="tag">早鳥 · 最受歡迎</div>
       <div class="pn">標準 Standard</div>
-      <div class="pp">NT$1,280<small> / 店 / 月</small></div>
-      <div class="pd">單店餐飲最適用，含薪資與勞健保計算。</div>
-      <ul><li>全功能開放</li><li>單店不限員工數</li><li>薪資＋勞健保自動算</li><li>LINE 通知推播</li><li>線上客服</li></ul>
+      <div class="pp">NT$599<small> / 店 / 月</small></div>
+      <div class="pd">單店餐飲一價全包（年繳 $5,990 再省 17%）。一天不到 20 元。</div>
+      <ul><li>全功能開放・不限員工數</li><li>薪資＋勞健保依法規自動算</li><li>勞檢報表一鍵備齊</li><li>LINE 通知推播</li><li>線上客服</li></ul>
       <button class="btn primary" onclick="openBuy('standard')">選擇標準版</button>
     </div>
     <div class="plan">
-      <div class="pn">企業 Enterprise</div>
-      <div class="pp">洽談<small> / 多店</small></div>
-      <div class="pd">連鎖／多分店，含總部集中管理與客製。</div>
-      <ul><li>多分店集中管理</li><li>權限分級與稽核</li><li>客製報表／API</li><li>專屬導入顧問</li></ul>
+      <div class="pn">連鎖 Chain</div>
+      <div class="pp">NT$499<small> / 店 / 月（3店起）</small></div>
+      <div class="pd">連鎖／多分店：總部集中管理、量大單價降。</div>
+      <ul><li>多分店集中管理</li><li>權限分級與稽核</li><li>合併報表／總部儀表板</li><li>專屬導入顧問</li></ul>
       <button class="btn ghost" onclick="openBuy('enterprise')">聯繫我們</button>
     </div>
   </div>
@@ -333,7 +333,7 @@ function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.
 function lineToast(){ toast('LINE 官方帳號尚未開通（雛形）'); }
 
 // purchase flow (MOCKUP — no real payment)
-var PLANS={trial:{n:'試用版',p:'NT$0 / 14 天'},standard:{n:'標準版',p:'NT$1,280 / 店 / 月'},enterprise:{n:'企業版',p:'專人洽談'}};
+var PLANS={trial:{n:'試用版',p:'NT$0 / 14 天'},standard:{n:'標準版',p:'NT$599 / 店 / 月'},enterprise:{n:'連鎖版',p:'NT$499 / 店 / 月（3店起）'}};
 var buyState={plan:'standard',pay:'ecpay'};
 function openBuy(plan){ buyState.plan=plan||'standard'; buyState.step=1; renderBuy(); document.getElementById('ovl').classList.add('on'); }
 function closeBuy(){ document.getElementById('ovl').classList.remove('on'); }

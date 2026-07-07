@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>益循 HRM · 上市執行手冊（無腦流程版）</title>
+<meta name="description" content="益循 HRM 上市執行手冊：FB/IG 帳號無腦設定＋全欄位文案、廣告投放流程與預算、LINE 官方帳號串接 LIFF、定價策略（打卡之星/NUEIP 對標）、最容易賺錢的執行策略。">
+<style>
+:root{
+  --brand:#1f8a4c;--brand-d:#12673a;--brand-l:#e7f4ec;--amber:#f2a900;--fb:#1877f2;--line-g:#06c755;
+  --ink:#152019;--muted:#5a6b61;--line:#e2ebe5;--ground:#ffffff;--ground-2:#f4f9f6;--card:#ffffff;
+  --sh:0 1px 2px rgba(20,50,35,.04),0 8px 24px rgba(20,50,35,.06);
+  --r:14px;--maxw:980px;--sans:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:ui-monospace,Menlo,Consolas,monospace;
+}
+@media(prefers-color-scheme:dark){:root{--ink:#e8f1eb;--muted:#9db0a5;--line:#25332c;--ground:#0d1411;--ground-2:#101a15;--card:#141e18;--brand-l:#16281e;--sh:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35)}}
+:root[data-theme="dark"]{--ink:#e8f1eb;--muted:#9db0a5;--line:#25332c;--ground:#0d1411;--ground-2:#101a15;--card:#141e18;--brand-l:#16281e;--sh:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35)}
+:root[data-theme="light"]{--ink:#152019;--muted:#5a6b61;--line:#e2ebe5;--ground:#ffffff;--ground-2:#f4f9f6;--card:#ffffff;--brand-l:#e7f4ec;--sh:0 1px 2px rgba(20,50,35,.04),0 8px 24px rgba(20,50,35,.06)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden}
+body{font-family:var(--sans);color:var(--ink);background:var(--ground);line-height:1.66;font-size:15.5px;-webkit-font-smoothing:antialiased}
+a{color:var(--brand)}
+h1,h2,h3,h4{margin:0;line-height:1.25;text-wrap:balance}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px}
+header.nav{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--ground) 90%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav-in{display:flex;align-items:center;justify-content:space-between;height:56px;gap:10px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:900;font-size:15px}
+.logo .mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--brand),var(--brand-d));display:grid;place-items:center;color:#fff;font-size:14px}
+.nav-links{display:flex;gap:12px;font-size:12.5px;font-weight:700;overflow-x:auto}
+.nav-links a{color:var(--muted);text-decoration:none;white-space:nowrap}
+.theme-btn{background:var(--card);border:1.5px solid var(--line);border-radius:9px;width:34px;height:34px;cursor:pointer;font-size:14px;color:var(--ink);flex-shrink:0}
+.hero{padding:40px 0 20px;background:radial-gradient(700px 340px at 88% -20%,var(--brand-l),transparent 60%)}
+.hero h1{font-size:clamp(23px,4vw,34px);font-weight:900;margin-bottom:10px}
+.hero p{color:var(--muted);max-width:38em}
+section{padding:30px 0;border-top:1px solid var(--line)}
+.ch{font-size:12px;font-weight:800;letter-spacing:.08em;color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand-d));display:inline-block;padding:4px 14px;border-radius:20px;margin-bottom:8px}
+h2.big{font-size:clamp(19px,3vw,26px);font-weight:900;margin:4px 0 6px}
+.sub{color:var(--muted);margin-bottom:18px;font-size:14.5px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;box-shadow:var(--sh);margin-bottom:14px}
+.card h3{font-size:16px;margin-bottom:8px;color:var(--brand)}
+ol.steps{counter-reset:s;list-style:none;padding:0;margin:0}
+ol.steps>li{position:relative;padding:0 0 14px 38px;border-left:2px solid var(--line);margin-left:13px}
+ol.steps>li:last-child{border-left-color:transparent;padding-bottom:2px}
+ol.steps>li::before{counter-increment:s;content:counter(s);position:absolute;left:-14px;top:-1px;width:26px;height:26px;background:var(--brand);color:#fff;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:12.5px}
+ol.steps b{display:block;margin-bottom:2px}
+ol.steps .d{color:var(--muted);font-size:14px}
+.copybox{background:var(--ground-2);border:1px dashed color-mix(in srgb,var(--brand) 40%,var(--line));border-radius:10px;padding:10px 13px;font-size:13.5px;margin:6px 0;white-space:pre-wrap;position:relative}
+.copybox .lbl{display:block;font-size:11px;font-weight:800;color:var(--brand);margin-bottom:3px;letter-spacing:.05em}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:11px;box-shadow:var(--sh);margin:8px 0}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--ground-2);font-size:12px;font-weight:800;color:var(--muted);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;white-space:nowrap}
+.pill{display:inline-block;font-size:11px;font-weight:800;padding:2px 10px;border-radius:20px;background:var(--brand-l);color:var(--brand-d)}
+.pill.warn{background:#fdecea;color:#c0392b}
+:root[data-theme="dark"] .pill.warn{background:#3a1f1c;color:#f0a89e}
+.pill.money{background:#fff4e0;color:#a76a00}
+:root[data-theme="dark"] .pill.money{background:#3a2e14;color:#f0cd85}
+.note{background:var(--brand-l);border-radius:10px;padding:11px 14px;font-size:13.5px;color:var(--brand-d);margin:10px 0}
+:root[data-theme="dark"] .note{color:var(--ink)}
+.warn-box{background:#fdecea;border-radius:10px;padding:11px 14px;font-size:13.5px;color:#8f2b20;margin:10px 0}
+:root[data-theme="dark"] .warn-box{background:#3a1f1c;color:#f0a89e}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:680px){.two{grid-template-columns:1fr}}
+code{font-family:var(--mono);font-size:12.5px;background:var(--brand-l);color:var(--brand-d);padding:1px 6px;border-radius:5px;word-break:break-all}
+footer{padding:32px 0;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+@media print{.nav,.theme-btn{display:none}body{font-size:12px}.card{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+<header class="nav"><div class="wrap nav-in">
+  <div class="logo"><span class="mark">益</span>上市執行手冊</div>
+  <nav class="nav-links"><a href="#pricing">⓪定價</a><a href="#social">①FB/IG</a><a href="#ads">②廣告</a><a href="#lineoa">③LINE</a><a href="#strategy">④賺錢策略</a></nav>
+  <button class="theme-btn" onclick="toggleTheme()" id="tb">🌙</button>
+</div></header>
+
+<div class="hero"><div class="wrap">
+  <h1>益循 HRM 上市執行手冊</h1>
+  <p>四份「無腦照做」流程＋全部文案備好＋定價對標調整。給非工程背景的人直接照著做，每一步寫清楚要點什麼、填什麼、花多少錢。</p>
+</div></div>
+
+<!-- ⓪ PRICING -->
+<section id="pricing"><div class="wrap">
+  <span class="ch">⓪ 定價策略（先看這個，影響後面所有文案）</span>
+  <h2 class="big">對標調研：我們原定價偏高，建議下修搶灘</h2>
+  <p class="sub">重點對手兩家：「打卡之星」走超低價買斷、「NUEIP」走不限人數月費。我們原本示範價 NT$1,280/店/月 在市場上沒有競爭力。</p>
+  <div class="tbl-wrap"><table>
+    <tr><th>產品</th><th>模式</th><th>價格</th><th>強項</th><th>弱點（我們的機會）</th></tr>
+    <tr><td><b>打卡之星</b><br>(dakastar)</td><td>一次買斷</td><td class="num">A方案 <b>$2,800</b> 買斷(打卡)<br>B/C/D 加購簽核/計薪<br>(≤50人)</td><td>超便宜、LINE打卡、終生用</td><td>功能拆賣要一直加購；介面陽春；<b>無餐飲業績/毛利、無多店總部視角</b></td></tr>
+    <tr><td><b>NUEIP</b></td><td>月費(年約)</td><td class="num"><b>$790/月</b> 不限人數<br>(年繳約 $9,480)</td><td>全功能、不限人數、大品牌</td><td>通用型不懂餐飲；要簽年約；<b>無 LINE 原生體驗</b>（要開網頁/裝APP）</td></tr>
+    <tr><td><b>益循 HRM</b></td><td colspan="3">定位：<b>「餐飲店專用的 LINE 人資」</b>——打卡之星的價格帶 × NUEIP 的完整度 × 只有我們有的餐飲業績/多店/勞檢包</td><td></td></tr>
+  </table></div>
+  <div class="card"><h3>💰 建議新定價（三層，已比照市場帶）</h3>
+  <div class="tbl-wrap"><table>
+    <tr><th>方案</th><th class="num">價格</th><th>內容</th><th>對標邏輯</th></tr>
+    <tr><td><b>免費版</b></td><td class="num">$0</td><td>單店 ≤5人：打卡＋班表＋布告欄</td><td>對打「打卡之星免費版」，當獲客鉤子</td></tr>
+    <tr><td><b>標準版</b> ⭐</td><td class="num"><b>$599/店/月</b><br>年繳 $5,990（-17%）</td><td>單店不限人數：全功能（含薪資勞健保、勞檢包、業績回報）</td><td>低於 NUEIP 790；打卡之星要買到同功能得 A+B+C+D 加購，我們一價全包</td></tr>
+    <tr><td><b>連鎖版</b></td><td class="num">$499/店/月<br>(3店起) 或洽談</td><td>多店＋總部儀表板＋權限分級＋合併報表</td><td>多店是我們獨有強項，量大單價降，鎖住連鎖客</td></tr>
+  </table></div>
+  <p class="sub" style="margin-top:8px">話術上永遠講「<b>一天不到 20 元，請不起工讀生但請得起人資系統</b>」。對買斷派客戶的回應：「買斷的系統不會跟著勞健保法規更新，算錯薪資被罰一次就超過十年月費」。</p>
+  <p class="sub">來源：<a href="https://www.dakastar.com.tw/pricing" target="_blank">打卡之星 pricing</a>／<a href="https://www.dakastar.com.tw/campaign/landing2-a" target="_blank">$2,800 買斷方案</a>／<a href="https://naomicheng0206.pixnet.net/blog/posts/14137811740" target="_blank">NUEIP 價格 790/月</a>。⚠️ 最終定價請哲安拍板，網站上我先同步改成建議價並標示「早鳥」。</p>
+  </div>
+</div></section>
+
+<!-- ① FB/IG -->
+<section id="social"><div class="wrap">
+  <span class="ch">① FB＋IG 官方帳號 · 無腦設定流程</span>
+  <h2 class="big">30 分鐘開好兩個官方帳號，欄位文案照抄</h2>
+  <p class="sub">先開 FB 粉專（是 IG 商業帳號與廣告的地基），再開 IG 綁定。需要：一個 FB 個人帳號、手機收驗證碼、Logo 圖（可先用 🌿 綠底「益」字圖）。</p>
+
+  <div class="card"><h3>📘 Facebook 粉絲專頁（10 分鐘）</h3>
+  <ol class="steps">
+    <li><b>開頁面</b><span class="d">FB 首頁 → 左欄「粉絲專頁」→「建立新粉絲專頁」</span></li>
+    <li><b>填基本資料（照抄下面文案）</b><span class="d">填完按「建立粉絲專頁」</span>
+      <div class="copybox"><span class="lbl">粉絲專頁名稱</span>益循 HRM－餐飲店的 LINE 人資系統</div>
+      <div class="copybox"><span class="lbl">類別（打字搜尋選這兩個）</span>軟體公司、商業服務</div>
+      <div class="copybox"><span class="lbl">簡介（255字內）</span>一條 LINE，管好整間店的人資。打卡、排班、請假、薪資勞健保自動算，員工不用裝 App，老闆一支手機管多店。專為台灣餐飲店設計｜14 天免費試用。</div>
+    </li>
+    <li><b>補齊資訊（左側「編輯詳細資料」）</b>
+      <div class="copybox"><span class="lbl">網站</span>https://posiloop.github.io/yixun-hrm/sales/</div>
+      <div class="copybox"><span class="lbl">關於（詳細版）</span>益循 HRM 是專為餐飲業設計的 LINE 人資系統。
+✅ GPS 定位打卡防代打　✅ 智慧排班/一鍵換班
+✅ 請假加班線上簽核　✅ 薪資勞健保依法規自動計算
+✅ 每日營業額回報　✅ 勞檢報表一鍵備齊
+✅ 多分店集中管理
+員工用 LINE 就會用，公司零硬體成本。現在申請 14 天免費試用 👉 官網連結</div>
+      <span class="d">頭像＝綠底「益」Logo；封面＝手機打卡畫面截圖（試玩頁截圖即可）</span></li>
+    <li><b>設定行動呼籲按鈕</b><span class="d">粉專頁面「＋新增行動呼籲按鈕」→ 選「瞭解詳情」→ 貼上銷售頁網址</span></li>
+    <li><b>發第一批貼文</b><span class="d">直接用我們準備好的 12 則貼文（<a href="../marketing/">社群內容包</a>），先發 01 痛點、03 定位打卡、11 免費試用 三則</span></li>
+  </ol></div>
+
+  <div class="card"><h3>📸 Instagram 商業帳號（10 分鐘）</h3>
+  <ol class="steps">
+    <li><b>註冊帳號</b><span class="d">IG App →「建立新帳號」</span>
+      <div class="copybox"><span class="lbl">用戶名稱（帳號 ID，可微調）</span>yixun.hrm</div>
+      <div class="copybox"><span class="lbl">名稱（可搜尋到的顯示名）</span>益循 HRM｜餐飲店 LINE 人資</div>
+    </li>
+    <li><b>轉商業帳號</b><span class="d">設定 →「帳號類型和工具」→「切換為專業帳號」→ 選「商家」→ 類別選「軟體」</span></li>
+    <li><b>綁定 FB 粉專</b><span class="d">設定 →「分享到其他應用程式」→ Facebook → 選剛開的粉專（這步做完才能一起下廣告）</span></li>
+    <li><b>個人檔案（照抄）</b>
+      <div class="copybox"><span class="lbl">個人簡介（150字內）</span>🌿 一條 LINE 管好整間店的人資
+📍打卡｜📅排班｜📝請假｜💰薪資勞健保自動算
+餐飲店專用・員工零學習・14天免費試用
+👇 立即試用</div>
+      <div class="copybox"><span class="lbl">網站欄</span>https://posiloop.github.io/yixun-hrm/sales/</div>
+    </li>
+    <li><b>發首批內容</b><span class="d">照 <a href="../marketing/">內容包</a> 的九宮格順序發（品牌塊→痛點→功能），限動放「打卡 Demo 螢幕錄影」</span></li>
+  </ol></div>
+  <div class="note">📌 圖片素材怎麼來：開 <a href="../?x=1">試玩系統</a> 手機截圖（打卡畫面/薪資條/班表）就是最好素材；Logo 可先用 Canva 3 分鐘做「綠底圓角＋白字益」。</div>
+</div></section>
+
+<!-- ② ADS -->
+<section id="ads"><div class="wrap">
+  <span class="ch">② 下廣告 · 無腦流程＋預算</span>
+  <h2 class="big">在 Meta 廣告管理員下（FB＋IG 一起投），第一個月 NT$9,000 試水</h2>
+  <p class="sub">需要準備：上面開好的粉專＋IG、一張信用卡、統編（可選）。全程在電腦網頁操作比較不會迷路。</p>
+
+  <div class="card"><h3>🧱 前置：商業管理平台（15 分鐘，一次性）</h3>
+  <ol class="steps">
+    <li><b>開 Business Manager</b><span class="d">到 <code>business.facebook.com</code> →「建立帳號」→ 公司名填「益循生活股份有限公司」＋ Email</span></li>
+    <li><b>加入資產</b><span class="d">左側「設定」→ 把「粉絲專頁」「IG 帳號」加進來</span></li>
+    <li><b>建廣告帳號</b><span class="d">「廣告帳號」→「新增」→ 時區台北、幣別 TWD</span></li>
+    <li><b>綁付款</b><span class="d">「付款方式」→ 加信用卡（這就是廣告扣款來源）⚠️ 這步需要真的信用卡，由你們操作</span></li>
+    <li><b>裝像素（可先跳過）</b><span class="d">「資料來源→像素」建立 Pixel；要埋進銷售頁時把 Pixel ID 給工程端（我）埋，之後才能做再行銷</span></li>
+  </ol></div>
+
+  <div class="card"><h3>🎯 投放：三檔活動（照填）</h3>
+  <div class="tbl-wrap"><table>
+    <tr><th>活動</th><th>目標(選項)</th><th>受眾設定</th><th>版位</th><th class="num">日預算</th><th>素材</th></tr>
+    <tr><td><b>A 認知</b></td><td>「知名度」或「流量」</td><td>地區:台灣｜年齡25-55｜興趣:餐廳、創業、POS系統、加盟</td><td>自動版位</td><td class="num">$100/天</td><td>內容包貼文01(排班之亂)轉廣告</td></tr>
+    <tr><td><b>B 名單</b> ⭐主力</td><td>「流量」→ 導到銷售頁</td><td>同上＋「與粉專互動過的人」</td><td>FB+IG 動態、Reels</td><td class="num">$150/天</td><td>貼文11(免費試用14天)＋按鈕「瞭解詳情」→ 銷售頁</td></tr>
+    <tr><td><b>C 再行銷</b></td><td>「流量/轉換」</td><td>自訂受眾:造訪過網站的人(需 Pixel)</td><td>FB+IG</td><td class="num">$50/天</td><td>貼文06(店長見證)</td></tr>
+  </table></div>
+  <p class="sub">👉 每檔活動步驟都一樣：廣告管理員 →「建立」→ 選目標 → 設受眾/版位/預算 → 選素材（用粉專現有貼文「加強推廣」最簡單）→ 送審（約幾小時過）。</p>
+  </div>
+
+  <div class="card"><h3>💵 要花多少錢（第一個月）</h3>
+  <div class="tbl-wrap"><table>
+    <tr><th>項目</th><th class="num">金額</th><th>說明</th></tr>
+    <tr><td>廣告費（A+B+C 共 $300/天 × 30天）</td><td class="num"><b>NT$9,000</b></td><td>台灣 FB/IG 每次連結點擊行情約 $3~10；$9,000 估可帶 1,000~2,500 次點進銷售頁</td></tr>
+    <tr><td>素材製作</td><td class="num">$0</td><td>用內容包文案＋系統截圖，不用外包</td></tr>
+    <tr><td>轉換預估</td><td class="num">—</td><td>抓保守 2% 填試用 → 20~50 個試用店家；成交 20% → <b>4~10 家付費</b> ≈ 月營收 $2,400~6,000（標準版$599），第2個月靠續約+轉介滾大</td></tr>
+  </table></div>
+  <div class="warn-box">⚠️ 心法：前兩週是「買數據」不是買客人——每 3 天看一次哪則素材便宜又有點擊，砍貴的、加碼便宜的。不要第一週就判斷成敗。</div>
+  </div>
+</div></section>
+
+<!-- ③ LINE OA -->
+<section id="lineoa"><div class="wrap">
+  <span class="ch">③ LINE 官方帳號＋串接 LIFF · 無腦流程</span>
+  <h2 class="big">40 分鐘：開 LINE 官方帳號 → 掛上我們的系統</h2>
+  <p class="sub">需要：一個 LINE 個人帳號、Email。全部免費（LINE OA 免費方案每月 200 則推播，前期夠用）。做完員工加好友就能在 LINE 裡用系統。</p>
+
+  <div class="card"><h3>Step 1｜開 LINE 官方帳號（10 分鐘）</h3>
+  <ol class="steps">
+    <li><b>註冊</b><span class="d">到 <code>tw.linebiz.com</code> →「免費開設帳號」→ 用 LINE 帳號登入</span>
+      <div class="copybox"><span class="lbl">帳號名稱</span>益循 HRM 人資助手</div>
+      <div class="copybox"><span class="lbl">業種</span>大分類:商業服務 ／ 小分類:資訊服務</div>
+    </li>
+    <li><b>基本設定（LINE Official Account Manager）</b>
+      <div class="copybox"><span class="lbl">狀態列(20字)</span>一條LINE管好整間店的人資</div>
+      <div class="copybox"><span class="lbl">歡迎訊息（加好友自動發送）</span>👋 歡迎加入益循 HRM！
+我能幫你：打卡📍 看班表📅 請假📝 領薪資條💰
+點下方選單開始使用；輸入「客服」可找真人。</div>
+    </li>
+  </ol></div>
+
+  <div class="card"><h3>Step 2｜開通 Messaging API + LIFF（15 分鐘，關鍵步）</h3>
+  <ol class="steps">
+    <li><b>啟用 Messaging API</b><span class="d">OA Manager → 設定 → Messaging API →「啟用」→ 會建立一個 Provider（名稱填「益循生活」）</span></li>
+    <li><b>進 LINE Developers</b><span class="d">到 <code>developers.line.biz</code> 用同帳號登入 → 找到剛才的 channel</span></li>
+    <li><b>建立 LIFF App</b><span class="d">Channel 內「LIFF」頁籤 →「Add」，照填：</span>
+      <div class="copybox"><span class="lbl">LIFF app name</span>yixun-hrm</div>
+      <div class="copybox"><span class="lbl">Size</span>Full</div>
+      <div class="copybox"><span class="lbl">Endpoint URL（就是我們的系統網址）</span>https://posiloop.github.io/yixun-hrm/</div>
+      <div class="copybox"><span class="lbl">Scopes</span>profile ＋ openid（勾這兩個）</div>
+    </li>
+    <li><b>記下 LIFF ID</b><span class="d">建立完會得到像 <code>1234567890-AbCdEfGh</code> 的 ID → <b>把它貼給我</b>，我把系統的「員編綁定/深連結」接上（工程端 30 分鐘）</span></li>
+    <li><b>Channel access token</b><span class="d">Channel「Messaging API」頁籤 → Issue token → <b>也貼給我</b>（做自動回覆 webhook 用）⚠️ token 是鑰匙，只私訊給我，不要貼群組</span></li>
+  </ol></div>
+
+  <div class="card"><h3>Step 3｜圖文選單（10 分鐘）</h3>
+  <ol class="steps">
+    <li><b>建立選單</b><span class="d">OA Manager →「圖文選單」→ 建立 → 版型選「大型 6 格」</span></li>
+    <li><b>六格設定（照 <a href="../line/">LINE 規劃書</a>）</b><span class="d">每格動作選「連結」，網址填 LIFF 深連結：</span>
+      <div class="copybox"><span class="lbl">六格連結（{LIFF_ID} 換成 Step2 拿到的）</span>📍打卡  https://liff.line.me/{LIFF_ID}?go=B
+📅班表  https://liff.line.me/{LIFF_ID}?go=C
+📝請假  https://liff.line.me/{LIFF_ID}?go=E
+💰薪資條 https://liff.line.me/{LIFF_ID}?go=K
+📣公告  https://liff.line.me/{LIFF_ID}?go=N
+💬客服  動作選「文字」→ 自動回覆關鍵字「客服」</div>
+    </li>
+    <li><b>自動回覆</b><span class="d">OA Manager →「自動回覆訊息」→ 照 <a href="../line/">規劃書②</a> 的 7 組關鍵字建（打卡/請假/薪資/忘記密碼/班表/客服/預設）</span></li>
+  </ol>
+  <div class="note">✅ 做完的樣子：員工加官方帳號 → 收到歡迎詞 → 點選單「打卡」→ LINE 內直接開我們系統打卡。<b>你只要把 LIFF ID 和 token 給我，剩下工程串接我來。</b></div>
+  </div>
+</div></section>
+
+<!-- ④ STRATEGY -->
+<section id="strategy"><div class="wrap">
+  <span class="ch">④ 最容易賺錢的執行策略</span>
+  <h2 class="big">先吃「認識的店」，再用廣告放大——90 天打法</h2>
+  <p class="sub">核心邏輯：這種工具的成交靠「信任＋看到 demo」，冷廣告轉換慢；所以先做熟客市場現金流，同時養廣告數據。</p>
+
+  <div class="two">
+    <div class="card"><h3>🥇 週 1-2：熟人圈直銷（成本 $0，最快的錢）</h3>
+    <ol class="steps">
+      <li><b>列 20 家名單</b><span class="d">益循自己的店＋你們認識的餐飲老闆＋供應商下游</span></li>
+      <li><b>一對一 LINE 私訊</b><span class="d">附試玩連結＋一頁通 PDF：「我們自己店在用的人資系統，幫你省月底算薪水的兩天」</span></li>
+      <li><b>目標：5 家試用、2 家付費</b><span class="d">首批客戶重點不是錢，是<b>見證素材</b>（拍店長使用照＋一句話推薦，回填到廣告）</span></li>
+    </ol></div>
+    <div class="card"><h3>🥈 週 3-6：社團＋廣告養數據</h3>
+    <ol class="steps">
+      <li><b>加 10 個 FB 餐飲社團</b><span class="d">搜「餐飲創業」「開店」「餐飲同業」；每週 1 篇乾貨文（用內容包的教育文，如「特休怎麼算」）文末放試用連結——不要硬廣，會被踢</span></li>
+      <li><b>廣告 B 檔開跑</b><span class="d">$150/天導試用；素材用第一批客戶見證</span></li>
+      <li><b>轉介機制</b><span class="d">「介紹一家店成交，兩邊各送一個月」——餐飲圈口碑傳很快</span></li>
+    </ol></div>
+    <div class="card"><h3>🥉 週 7-12：吃連鎖＋通路合作</h3>
+    <ol class="steps">
+      <li><b>主攻 3-10 店連鎖</b><span class="d">多店管理是我們獨有強項且單價×店數；名單來源：加盟展、經濟部連鎖加盟名錄</span></li>
+      <li><b>找 POS/食材商異業合作</b><span class="d">他們有現成餐飲客戶名單，分潤 20-30% 讓他們幫賣</span></li>
+      <li><b>內容飛輪</b><span class="d">每月 2 篇「勞檢/薪資法規」教育文（我可代寫）建立專業感，SEO 長尾收免費流量</span></li>
+    </ol></div>
+    <div class="card"><h3>📊 收入模型（保守）</h3>
+    <div class="tbl-wrap"><table>
+      <tr><th>時間</th><th class="num">付費店數</th><th class="num">MRR(月經常收入)</th></tr>
+      <tr><td>第 1 個月</td><td class="num">2-4</td><td class="num">$1,200-2,400</td></tr>
+      <tr><td>第 3 個月</td><td class="num">10-20</td><td class="num">$6,000-12,000</td></tr>
+      <tr><td>第 6 個月</td><td class="num">30-60（含1-2連鎖）</td><td class="num">$18,000-36,000</td></tr>
+      <tr><td>第 12 個月</td><td class="num">100+</td><td class="num">$60,000+</td></tr>
+    </table></div>
+    <p class="sub" style="margin-top:6px">SaaS 的重點是<b>續約率</b>：只要薪資算得準（我們的強項），店家幾乎不會換系統——每一家成交都是年金。</p></div>
+  </div>
+  <div class="note">🎯 本週就能做的三件事：①照①開好 FB/IG（30分鐘）②照③開好 LINE OA、把 LIFF ID/token 給我（40分鐘）③列 20 家熟人名單開始私訊（1小時）。廣告可以等前兩件做完再開。</div>
+</div></section>
+
+<footer><div class="wrap">
+  益循 HRM 上市執行手冊 · 內部文件 ·
+  <a href="../?x=1">試玩</a> · <a href="../sales/">銷售頁</a> · <a href="../onepager/">一頁通</a> · <a href="../line/">LINE規劃</a> · <a href="../marketing/">社群內容包</a>
+</div></footer>
+<script>
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);document.getElementById('tb').textContent=t==='dark'?'☀️':'🌙';try{localStorage.setItem('yx_theme',t)}catch(e){}}
+function toggleTheme(){var c=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');applyTheme(c==='dark'?'light':'dark');}
+try{var s=localStorage.getItem('yx_theme');if(s)applyTheme(s);else document.getElementById('tb').textContent=matchMedia('(prefers-color-scheme:dark)').matches?'☀️':'🌙';}catch(e){}
+</script>
+</body>
+</html>
