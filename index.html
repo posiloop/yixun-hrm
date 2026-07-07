@@ -417,17 +417,22 @@ PANELS.home=(me)=>{
   const quick=[];
   quick.push(['B','定位打卡','立即上/下班打卡']);
   if(can('supervisor')) quick.push(['F','待我簽核', store.approvals.filter(a=>a.state==='待核').length+' 筆待辦']);
-  if(can('employee')) quick.push(['E','請假/加班','線上申請']);
+  if(!can('supervisor')) quick.push(['E','請假/加班','線上申請']);
+  quick.push(['K','電子薪資條','查看我的薪資條']);
+  if(!can('supervisor')) quick.push(['O','教育訓練','我的完訓/報名']);
   if(can('hr')) quick.push(['J','薪資計算','跑本月薪資']);
+  if(can('hr')) quick.push(['O','教育訓練','完訓時數/勞檢']);
+  if(can('admin')) quick.push(['SET','系統設置','權限 / 租戶 / 規則']);
   return `
   <h1 class="pt">歡迎，${me.name} ${roleChip(currentRole)}</h1>
   <p class="lead">${me.title} · ${storeName(me.store)} · 員編 ${me.id}　｜　目前租戶：<b>${TENANTS[currentTenant].name}</b></p>
-  <div class="grid g4" style="margin-bottom:14px">
-    <div class="stat"><div class="k">你的角色可用模組</div><div class="v">${MODS.filter(m=>m.k&&can(m.view)).length}</div><div class="d p-info pill">共 12 大模組</div></div>
-    <div class="stat"><div class="k">本月出勤</div><div class="v">98.2%</div><div class="d">遲到 0 · 早退 0</div></div>
-    <div class="stat"><div class="k">特休餘額</div><div class="v">56<span style="font-size:14px">h</span></div><div class="d">補休 10h</div></div>
+  ${(()=>{ const at=attend(me.id), bal=leaveBal(me.id), rate=Math.round(at.days/22*1000)/10;
+    return `<div class="grid g4" style="margin-bottom:14px">
+    <div class="stat"><div class="k">你的角色可用模組</div><div class="v">${MODS.filter(m=>m.k&&canMod(m.k)).length}</div><div class="d p-info pill">共 ${MODS.filter(m=>m.k&&m.k!=='home').length} 大模組</div></div>
+    <div class="stat"><div class="k">本月出勤</div><div class="v">${rate}%</div><div class="d">出勤 ${at.days} 天 · 遲到 ${at.late}</div></div>
+    <div class="stat"><div class="k">特休餘額</div><div class="v">${bal.annual}<span style="font-size:14px">h</span></div><div class="d">補休 ${bal.comp}h · 依年資</div></div>
     <div class="stat"><div class="k">待我處理</div><div class="v">${can('supervisor')?store.approvals.filter(a=>a.state==='待核').length:0}</div><div class="d">簽核項目</div></div>
-  </div>
+  </div>`; })()}
   <div class="card">
     <h2>⚡ 快速操作</h2>
     <div class="grid g3">
@@ -608,10 +613,12 @@ window.signDoc=(id,docId)=>{ const e=EMP.find(x=>x.id===id); const d=e.docs.find
 window.delDoc=(id,docId)=>{ const e=EMP.find(x=>x.id===id); if(!confirm('刪除此文件？')) return; e.docs=e.docs.filter(x=>x.id!==docId); save(); toast('已刪除'); docManager(id); };
 // 出勤異常掃描 + 自動通知
 function scanAnomalies(){ const out=[];
-  EMP.filter(e=>e.state==='在職').forEach(e=>{ const at=attend(e.id);
-    if(at.lateMin>store.attendCfg.lateGrace) out.push({emp:e,type:'遲到',detail:'本月遲到 '+at.late+' 次·累計 '+at.lateMin+' 分（超過寬限 '+store.attendCfg.lateGrace+' 分）'});
-    if(at.early>0) out.push({emp:e,type:'早退',detail:'本月早退 '+at.early+' 次'});
-    const c=store.clock[e.id]; if(c&&c.in&&!c.out) out.push({emp:e,type:'缺卡',detail:'今日只有上班打卡、無下班打卡'});
+  EMP.filter(e=>e.state==='在職').forEach(e=>{ const c=store.clock[e.id]; const pa=punchAnalysis(e);
+    if(pa.in && pa.late>0){ // 今日實際打卡→即時遲到（優先，最準）
+      out.push({emp:e,type:'遲到',detail:'今日 '+pa.in+' 打卡 vs 排定 '+pa.sched.start+'，遲到 '+pa.late+' 分（'+pa.sched.src+'）'});
+    } else { const at=attend(e.id); if(at.lateMin>store.attendCfg.lateGrace) out.push({emp:e,type:'遲到',detail:'本月累計遲到 '+at.late+' 次·'+at.lateMin+' 分'}); }
+    if(pa.in && pa.out && pa.early>0) out.push({emp:e,type:'早退',detail:'今日 '+pa.out+' 下班 vs 排定 '+pa.sched.end+'，早退 '+pa.early+' 分'});
+    if(c&&c.in&&!c.out) out.push({emp:e,type:'缺卡',detail:'今日只有上班打卡、無下班打卡'});
   });
   return out; }
 window.notifyAnomalies=()=>{ const a=scanAnomalies(); if(!a.length){ toast('目前無出勤異常 🎉'); return; }
@@ -685,6 +692,16 @@ PANELS.B=(me)=>{
       ${can('hr')?'<button class="btn sm sec" style="margin-top:12px" onclick="go(\'BSET\')">⚙ 打卡 / 考勤參數設置</button>':'<div class="note" style="margin-top:12px">打卡資料即時回傳後台。</div>'}
     </div>
   </div>
+  ${(()=>{ const pa=punchAnalysis(me); if(!pa.in) return `<div class="card"><h2>📈 今日出勤分析</h2><p class="lead">尚未打卡；上班打卡後，系統依你的排定班別（${pa.sched.start}–${pa.sched.end}·${pa.sched.src}）即時計算遲到與加班。</p></div>`;
+    return `<div class="card"><h2>📈 今日出勤分析（打卡 × 班表 即時計算）</h2>
+    <div class="grid g4">
+      ${kv('排定班別',pa.sched.start+'–'+pa.sched.end+'<br><span style="font-size:11px;color:var(--muted)">'+pa.sched.src+'</span>')}
+      ${kv('實際打卡',(pa.in||'--')+' ~ '+(pa.out||'<span style=\"color:var(--muted)\">尚未下班</span>'))}
+      ${kv('遲到',pa.late>0?'<b style="color:#d9534f">'+pa.late+' 分</b>':'<b style="color:var(--brand)">準時 ✓</b>')}
+      ${kv('加班',pa.ot>0?'<b style="color:var(--brand)">'+pa.ot+' 時</b>':(pa.worked!=null?'無':'—'))}
+    </div>
+    ${pa.worked!=null?`<p class="note" style="margin-top:10px">今日工時 <b>${pa.worked} 時</b>（已扣休息 ${store.attendCfg.breakAuto}h）；超過 ${store.attendCfg.otThreshold}h 計加班（倍率 ${store.attendCfg.ot1}）。遲到＝上班晚於「排定 ${store.attendCfg.flex?'＋彈性 '+store.attendCfg.flexMin+' 分':'＋寬限 '+store.attendCfg.lateGrace+' 分'}」。改考勤設置→此處即時重算。</p>`:'<p class="note" style="margin-top:10px">下班打卡後計算工時與加班。</p>'}
+    </div>`; })()}
   ${can('supervisor')?(()=>{ const anom=scanAnomalies(); return `<div class="card" style="${anom.length?'border-color:var(--amber)':''}"><div class="between"><h2 style="margin:0">⚠️ 出勤異常自動偵測（${anom.length}）</h2>
     <button class="btn sm" onclick="notifyAnomalies()">掃描並推播通知</button></div>
     <div class="tbl-wrap" style="margin-top:10px"><table><tr><th>員工</th><th>異常類型</th><th>說明</th></tr>
@@ -860,6 +877,18 @@ window.submitSales=(empId)=>{ const e=EMP.find(x=>x.id===empId); const g=id=>+do
 function attend(empId){ if(!store.attendance[empId]){ const seed=[...empId].reduce((a,c)=>a+c.charCodeAt(0),0);
   store.attendance[empId]={days:22-(seed%3),late:seed%4,lateMin:(seed%4)*8,early:seed%2,ot:(seed%5)+((seed%2)?1:3)}; }
   return store.attendance[empId]; }
+// 打卡→考勤：由「實際打卡時間」對「排定班別」即時算遲到/早退/加班（非種子）
+function toMin(t){ if(!t||!/^\d{1,2}:\d{2}$/.test(t)) return null; const [h,m]=t.split(':').map(Number); return h*60+m; }
+function schedFor(me){ // 取本週第一筆實際排班為排定時間；無排班用班別預設
+  if(store.shifts){ for(let i=0;i<7;i++){ const s=getShift(me.name,i); if(s&&s.start&&s.end) return {start:s.start,end:s.end,src:'排班表'}; } }
+  const sd=store.shiftDefs.find(x=>x.k&&x.k!=='休'&&x.start&&x.end); return sd?{start:sd.start,end:sd.end,src:'班別預設'}:{start:'09:00',end:'18:00',src:'標準'}; }
+function punchAnalysis(me){ const c=store.clock[me.id]||{}; const ac=store.attendCfg; const sched=schedFor(me);
+  const inM=toMin(c.in),outM=toMin(c.out),sM=toMin(sched.start),eM=toMin(sched.end);
+  let late=0,early=0,worked=null,ot=0;
+  if(inM!=null&&sM!=null){ const allow=sM+(ac.flex?(+ac.flexMin||0):(+ac.lateGrace||0)); late=Math.max(0,inM-allow); }
+  if(outM!=null&&eM!=null) early=Math.max(0,eM-outM);
+  if(inM!=null&&outM!=null){ worked=Math.max(0,(outM-inM)/60-(+ac.breakAuto||0)); ot=Math.max(0,worked-(+ac.otThreshold||8)); }
+  return {sched,in:c.in||null,out:c.out||null,late,early,worked:worked==null?null:Math.round(worked*10)/10,ot:Math.round(ot*10)/10}; }
 
 // E 加班請假（真的送單 → 進 F 簽核佇列；核准回寫餘額）
 // 勞基法特休（依年資，回小時）：6m→3天,1y→7,2y→10,3-4y→14,5-9y→15,10y+→15+每年1天上限30天
