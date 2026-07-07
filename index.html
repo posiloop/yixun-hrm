@@ -338,12 +338,30 @@ function seedYixun(){ const d=defaultTenantData();
   d.posts=[{id:1,title:'7月排班注意事項',body:'颱風季來臨，各店請確認緊急聯絡與代班機制。',by:'李文華',role:'hr',date:'2026/07/03',pin:true},{id:2,title:'新版電子薪資條上線',body:'7 月起薪資條改由 LINE 推播，請員工確認已加官方帳號。',by:'周建國',role:'admin',date:'2026/07/01',pin:false}];
   d.insCfg.unitName='益循生活股份有限公司'; d.insCfg.unitNo='12345678';
   return d; }
+// 第二示範租戶：順口鹽酥雞（板橋文化店 / 三重重新店）
+function seedDemo2(){ const d=defaultTenantData();
+  d.emps=[
+    {id:'S26B0101',name:'蔡明宏',store:0,dept:'門市',title:'店長',type:'正職',role:'supervisor',base:46000,bank:'中信 8220011234567',state:'在職',start:'2025-06-02'},
+    {id:'S26B0102',name:'林淑芬',store:0,dept:'油炸',title:'資深油炸手',type:'正職',role:'employee',base:38000,bank:'台北富邦 3900012345678',state:'在職',start:'2025-09-15'},
+    {id:'S26B0103',name:'鄭凱文',store:0,dept:'外場',title:'兼職外場',type:'兼職',role:'employee',base:190,bank:'玉山 8100056781234',state:'在職',start:'2026-03-20'},
+    {id:'S26T0201',name:'黃雅琪',store:1,dept:'門市',title:'副店長',type:'正職',role:'employee',base:40000,bank:'國泰 0120078905612',state:'在職',start:'2025-11-08'},
+    {id:'S26T0202',name:'吳建德',store:1,dept:'油炸',title:'油炸手',type:'正職',role:'employee',base:36000,bank:'台新 2050034567890',state:'在職',start:'2026-04-01'},
+    {id:'H25A0001',name:'周佩君',store:0,dept:'管理',title:'人資會計',type:'正職',role:'hr',base:44000,bank:'合庫 5120090012345',state:'在職',start:'2025-05-01'},
+  ];
+  d.depts=[{id:'D0',name:'順口鹽酥雞總部',parent:null,head:'H25A0001'},{id:'D1',name:'板橋文化店',parent:'D0',head:'S26B0101'},{id:'D2',name:'三重重新店',parent:'D0',head:'S26T0201'},{id:'D3',name:'油炸組',parent:'D1',head:'S26B0102'}];
+  d.deptMap={S26B0101:'D1',S26B0102:'D3',S26B0103:'D1',S26T0201:'D2',S26T0202:'D2',H25A0001:'D0'};
+  d.sales=[{store:0,date:'2026/07/05',amt:26800,guests:210,food:9400,labor:4200,waste:180,by:'蔡明宏'},{store:1,date:'2026/07/05',amt:19500,guests:156,food:7100,labor:3600,waste:240,by:'黃雅琪'}];
+  d.approvals=[{id:1,who:'林淑芬',empId:'S26B0102',store:0,type:'加班',detail:'07/04 週五尖峰延長',hrs:2,date:'2026-07-04',state:'待核',kind:'ot'},{id:2,who:'鄭凱文',empId:'S26B0103',store:0,type:'特休',detail:'07/18 半天',hrs:4,date:'2026-07-18',state:'待核',kind:'leave'}];
+  d.posts=[{id:1,title:'鹽酥雞粉漿比例更新',body:'新配方 7/10 起全店統一，請各店確認備料。',by:'周佩君',role:'hr',date:'2026/07/04',pin:true}];
+  d.courses=[{id:'c1',name:'食品安全衛生教育訓練',hours:3,date:'2026/07/20',required:true},{id:'c2',name:'油炸鍋安全操作',hours:2,date:'2026/07/25',required:true}];
+  d.insCfg.unitName='順口鹽酥雞商行'; d.insCfg.unitNo='87654321';
+  return d; }
 
 let store=JSON.parse(localStorage.getItem(LS)||'null');
 if(!store){ store={tenant:'yixun',role:'employee',seq:100,tenants:{},tenantStores:{},tenantMeta:{}}; }
 if(!store.tenants) store.tenants={};
 if(!store.tenants.yixun) store.tenants.yixun=seedYixun();
-if(!store.tenants.demo2) store.tenants.demo2=defaultTenantData();
+if(!store.tenants.demo2||!(store.tenants.demo2.emps&&store.tenants.demo2.emps.length)) store.tenants.demo2=seedDemo2();
 if(!store.tenants.blank) store.tenants.blank=defaultTenantData();   // 完全空白新租戶
 if(store.seq===undefined) store.seq=100;
 // 分店清單（每租戶）：yixun/demo2 由 TENANTS 帶入；blank 空
