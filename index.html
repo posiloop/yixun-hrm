@@ -790,8 +790,9 @@ PANELS.C=(me)=>{
   return page('C','排班表','Shift Scheduling',cfg+`
   <div class="card"><div class="between"><h2 style="margin:0">🗓️ ${storeName(0)} · 本週班表</h2>
     ${editable?`<div class="row"><span class="pill p-info">變形工時檢核：正常</span>
+      <button class="btn sm ghost" onclick="reqSwap()">🔄 換班</button>
       <button class="btn sm ghost" onclick="autoFill()">一鍵帶入預設</button>
-      <button class="btn sm" onclick="toast('（示範）已推播 LINE 通知本週班表')">推播班表</button></div>`:'<span class="pill p-gray">員工僅檢視</span>'}</div>
+      <button class="btn sm" onclick="toast('（示範）已推播 LINE 通知本週班表')">推播班表</button></div>`:'<button class="btn sm" onclick="reqSwap()">🔄 申請換班</button>'}</div>
     <div class="tbl-wrap" style="margin-top:12px"><table><tr><th>姓名</th>${WEEK.map(d=>'<th style="text-align:center">'+d+'</th>').join('')}<th class="num">週工時</th></tr>
     ${roster.map(name=>`<tr><td style="white-space:nowrap">${name}</td>${WEEK.map((_,d)=>cell(name,d)).join('')}<td class="num"><b>${wh(name)}h</b></td></tr>`).join('')}</table></div>
     <p class="lead" style="margin-top:8px">${store.shiftDefs.filter(s=>s.k!=='休').map(s=>s.k+' '+s.start+'–'+s.end).join(' ／ ')}　·　與打卡、工時、薪資<b>同源串接</b></p>
@@ -900,7 +901,7 @@ PANELS.E=(me)=>{
   const cfg=can('hr');
   const bal=leaveBal(me.id);
   const openLeaves=LEAVE_TYPES.filter(l=>store.leaveCfg[l.k]);
-  const mine=store.approvals.filter(a=>a.empId===me.id&&(a.kind==='leave'||a.kind==='ot'));
+  const mine=store.approvals.filter(a=>a.empId===me.id&&(a.kind==='leave'||a.kind==='ot'||a.kind==='swap'));
   const applyCard=`<div class="card"><h2>📝 線上申請（送出即進主管簽核）</h2>
     <div class="grid g2">
       <div class="field"><label class="f">類別</label><select class="fld" id="eaType"><option value="加班">加班</option>${openLeaves.map(l=>`<option value="${l.name}">${l.name}</option>`).join('')}</select></div>
@@ -960,8 +961,28 @@ function applyLeaveBalance(a,dir){ // dir=-1 扣, +1 還
 }
 window.approve=(id,ok)=>{ const a=store.approvals.find(x=>x.id===id); const was=a.state; a.state=ok?'已核准':'已退回';
   if(ok && was!=='已核准') applyLeaveBalance(a,-1);   // 核准→扣特休/加班→補休+
+  if(ok && was!=='已核准' && a.kind==='swap'){ // 換班核准 → 班表實際對調
+    const emp=EMP.find(e=>e.id===a.empId)||{name:a.who}; const k1=shiftKey(emp.name,a.day), k2=shiftKey(a.targetName,a.day);
+    const s1=store.shifts[k1], s2=store.shifts[k2]; store.shifts[k1]=s2; store.shifts[k2]=s1;
+    notify('🔄','換班已核准·班表已對調', a.who+' ⇄ '+a.targetName+'　'+WEEK[a.day]+' 班別已對調'); }
   notify(ok?'✅':'↩️', a.type+(ok?' 已核准':' 已退回'), '@'+a.who+'：你的「'+a.type+'」申請'+(ok?'已核准':'被退回'));
-  save(); toast(a.who+' 的'+a.type+' '+(ok?'已核准（餘額已回寫）':'已退回')); render(); };
+  save(); toast(a.who+' 的'+a.type+' '+(ok?'已核准':'已退回')); render(); };
+// 換班申請（員工發起 → 主管核准 → 班表對調）
+window.reqSwap=()=>{ const me=meFor(currentRole); const myDays=[];
+  for(let d=0;d<7;d++){ const s=getShift(me.name,d); if(s.shift&&s.shift!=='休') myDays.push({d,label:WEEK[d]+'（'+s.shift+' 班）'}); }
+  if(!myDays.length){ toast('你本週沒有排定班別可換'); return; }
+  const others=EMP.filter(e=>e.state!=='離職'&&e.id!==me.id);
+  modal('🔄 申請換班',`
+    <div class="field"><label class="f">我要換掉的班</label><select class="fld" id="swDay">${myDays.map(x=>`<option value="${x.d}">${x.label}</option>`).join('')}</select></div>
+    <div class="field"><label class="f">對調對象</label><select class="fld" id="swTarget">${others.map(e=>`<option value="${e.id}">${e.name}</option>`).join('')}</select></div>
+    <div class="field"><label class="f">事由</label><input id="swReason" placeholder="臨時有事，想與同事對調"></div>
+    <div class="row"><button class="btn" onclick="submitSwap()">送出換班申請</button><button class="btn ghost" onclick="closeModal()">取消</button></div>
+    <p class="note" style="margin-top:8px">送出後對方與主管收到通知；主管核准後班表自動對調、雙方即時看到新班。</p>`); };
+window.submitSwap=()=>{ const me=meFor(currentRole); const d=+document.getElementById('swDay').value; const t=EMP.find(e=>e.id===document.getElementById('swTarget').value); const reason=document.getElementById('swReason').value;
+  const myS=getShift(me.name,d), tS=getShift(t.name,d);
+  store.approvals.push({id:nextSeq(),empId:me.id,who:me.name,store:me.store,type:'換班',kind:'swap',day:d,targetId:t.id,targetName:t.name,detail:WEEK[d]+'：'+me.name+'('+(myS.shift||'休')+') ⇄ '+t.name+'('+(tS.shift||'休')+')'+(reason?'　'+reason:''),state:'待核'});
+  notify('🔄','新換班申請', me.name+' 想與 '+t.name+' 對調 '+WEEK[d]+' 班別，待主管核准');
+  save(); closeModal(); toast('換班申請已送出，進主管簽核'); render(); };
 window.unapprove=(id)=>{ const a=store.approvals.find(x=>x.id===id); if(a.state==='已核准') applyLeaveBalance(a,+1); // 撤銷核准→還回
   a.state='待核'; save(); toast('已撤銷「'+a.who+' 的'+a.type+'」回待核'); render(); };
 window.delApproval=(id)=>{ const a=store.approvals.find(x=>x.id===id); if(!confirm('確定刪除「'+a.who+' 的'+a.type+'」這筆紀錄？')) return; store.approvals=store.approvals.filter(x=>x.id!==id); save(); toast('已刪除該簽核紀錄'); render(); };
