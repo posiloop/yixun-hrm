@@ -216,6 +216,7 @@ const MODS=[
   {k:'M', tag:'M', name:'部門管理', en:'Departments', view:'hr', manage:'hr'},
   {k:'O', tag:'O', name:'教育訓練', en:'Training', view:'employee', manage:'hr'},
   {k:'P', tag:'P', name:'福利管理', en:'Benefits', view:'employee', manage:'hr'},
+  {k:'Q', tag:'Q', name:'勞檢報表', en:'Labor Audit', view:'hr', config:'hr'},
   {k:'G', tag:'G', name:'考績獎金', en:'Performance', view:'supervisor', config:'hr'},
   {k:'I', tag:'I', name:'加退保', en:'Insurance', view:'hr'},
   {k:'J', tag:'J', name:'薪資計算', en:'Payroll', view:'hr'},
@@ -1268,6 +1269,47 @@ PANELS.P=(me)=>{
   return page('P','福利管理','Benefits',cfgCard+enrollCard);
 };
 window.toggleBenefit=(eid,bid,v)=>{ store.benefitEnroll[eid]=store.benefitEnroll[eid]||[]; if(v){ if(!store.benefitEnroll[eid].includes(bid)) store.benefitEnroll[eid].push(bid); } else store.benefitEnroll[eid]=store.benefitEnroll[eid].filter(x=>x!==bid); save(); };
+
+// Q 勞檢報表（勞動檢查常備報表 + 匯出 + 列印）
+PANELS.Q=(me)=>{
+  const roster=EMP.filter(e=>e.state==='在職');
+  const totalOT=roster.reduce((s,e)=>s+attend(e.id).ot,0);
+  const trainDone=roster.filter(e=>store.courses.filter(c=>c.required).every(c=>trainStatus(e.id,c.id)==='完成')).length;
+  const insured=roster.filter(e=>(e.insBr||1)>0).length;
+  const reps=[
+    ['📋 出勤紀錄','出勤天數/遲到/早退/加班（依打卡×班表計算）','attendance'],
+    ['⏱ 加班時數清冊','各員加班時數與加班費（勞基法上限稽核）','overtime'],
+    ['🎓 教育訓練時數','法遵訓練（食安/消防等）完訓時數','training'],
+    ['🛡 加退保級距清冊','投保薪資與勞健保級距（雇主/自付）','insurance'],
+    ['💰 薪資清冊','應發/應扣/實發（薪資給付紀錄）','payroll'],
+    ['👥 員工名冊','在職/離職員工基本清冊','roster'],
+  ];
+  return page('Q','勞檢報表','Labor Inspection Reports',`
+  <div class="grid g4" style="margin-bottom:14px">
+    <div class="stat"><div class="k">在職人數</div><div class="v">${roster.length}</div><div class="d">投保 ${insured} 人</div></div>
+    <div class="stat"><div class="k">本月總加班</div><div class="v">${totalOT}<span style="font-size:14px">h</span></div><div class="d">勞基法上限稽核</div></div>
+    <div class="stat"><div class="k">必修完訓</div><div class="v">${trainDone}/${roster.length}</div><div class="d">法遵教育訓練</div></div>
+    <div class="stat"><div class="k">投保單位</div><div class="v" style="font-size:15px">${store.insCfg.unitName||'—'}</div><div class="d">${store.insCfg.unitNo||'未設'}</div></div>
+  </div>
+  <div class="card"><div class="between"><h2 style="margin:0">🗂 勞動檢查報表包</h2>
+    <button class="btn" onclick="printLaborPack()">🖨 列印 / 存 PDF 總表</button></div>
+    <p class="lead" style="margin:6px 0 14px">勞動檢查常要的資料一次備齊；各項可單獨匯出 CSV，或列印四合一總表。</p>
+    <div class="tbl-wrap"><table><tr><th>報表</th><th>說明</th><th>匯出</th></tr>
+    ${reps.map(r=>`<tr><td><b>${r[0]}</b></td><td style="white-space:normal;color:var(--muted)">${r[1]}</td><td><button class="btn sm ghost" onclick="exportCSV('${r[2]}')">匯出 CSV</button></td></tr>`).join('')}</table></div>
+    <p class="note" style="margin-top:12px">全部數據與打卡、排班、薪資、教育訓練<b>同源</b>——現場資料一改，報表即時反映；不需另外整理。</p>
+  </div>
+  <div class="card"><h2>✅ 法遵自檢清單</h2>
+    <div class="tbl-wrap"><table><tr><th>檢查項目</th><th>狀態</th></tr>
+    ${[['出勤紀錄逐日留存（打卡）', store.clock&&Object.keys(store.clock).length?'已留存':'尚無打卡'],
+       ['加班有申請/核准紀錄', store.approvals.some(a=>a.kind==='ot')?'有':'尚無'],
+       ['特休依年資給假', '系統自動（勞基§38）'],
+       ['勞健保投保級距設定', store.insCfg.unitName?'已設定':'未設投保單位'],
+       ['法遵教育訓練時數', trainDone+'/'+roster.length+' 完訓'],
+       ['薪資給付明細留存', '每期薪資條可查']
+      ].map(x=>`<tr><td>${x[0]}</td><td><span class="pill ${/未|尚無/.test(x[1])?'p-warn':'p-ok'}">${x[1]}</span></td></tr>`).join('')}</table></div>
+    <p class="note" style="margin-top:12px">此清單依現場資料即時判定，協助店家在勞檢前先自我檢視。</p>
+  </div>`);
+};
 window.addBenefit=()=>{ modal('新增福利',`<div class="field"><label class="f">福利名稱</label><input id="beName" placeholder="例：交通補助"></div>
   <div class="grid g2"><div class="field"><label class="f">類型</label><select class="fld" id="beType"><option>現金</option><option>服務</option><option>保險</option><option>活動</option><option>補助</option></select></div><div class="field"><label class="f">金額（現金類）</label><input id="beVal" type="number" value="0"></div></div>
   <div class="field"><label class="f">說明</label><input id="beNote"></div>
@@ -1427,8 +1469,28 @@ window.exportCSV=(kind)=>{ let head=[],rows=[],fn='export.csv';
     rows=EMP.filter(e=>e.state==='在職').map(e=>{const p=calcPay(e);return [e.name,storeName(e.store),p.earn,p.deduct,p.net,e.bank];}); }
   else if(kind==='roster'){ fn='員工名冊.csv'; head=['員編','姓名','分店','部門','職稱','型態','狀態'];
     rows=EMP.map(e=>[e.id,e.name,storeName(e.store),e.dept,e.title,e.type,e.state]); }
+  else if(kind==='overtime'){ fn='加班時數清冊.csv'; head=['員工','分店','本月加班時數','加班費','當日工時','當日加班'];
+    rows=EMP.filter(e=>e.state==='在職').map(e=>{const at=attend(e.id);const pa=punchAnalysis(e);const h=e.type==='兼職'?e.base:Math.round(e.base/240);return [e.name,storeName(e.store),at.ot,Math.round(at.ot*h*store.attendCfg.ot1),pa.worked==null?'-':pa.worked,pa.ot];}); }
+  else if(kind==='training'){ fn='教育訓練時數.csv'; head=['員工','分店',...store.courses.map(c=>c.name),'完訓總時數'];
+    rows=EMP.filter(e=>e.state==='在職').map(e=>{let h=0;const cells=store.courses.map(c=>{const s=trainStatus(e.id,c.id);if(s==='完成')h+=c.hours;return s;});return [e.name,storeName(e.store),...cells,h+'h'];}); }
+  else if(kind==='insurance'){ fn='加退保級距清冊.csv'; head=['員工','投保單位','投保薪資','勞保自付','職災(雇主)','勞退(雇主)','健保自付','眷屬','到職日'];
+    rows=EMP.filter(e=>e.state==='在職').map(e=>{const d=insDetail(e);return [e.name,store.insCfg.unitName,d.br,d.laborSelf,d.occ,d.pension,d.healthSelf,d.dep,e.start];}); }
   const csv='﻿'+[head.join(','),...rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(','))].join('\n');
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=fn; a.click(); toast('已匯出 '+fn); };
+// 勞檢總表列印（開新視窗 → 列印/存 PDF）
+window.printLaborPack=()=>{ const roster=EMP.filter(e=>e.state==='在職');
+  const tbl=(cap,head,rows)=>`<h3>${cap}</h3><table><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table>`;
+  const att=tbl('一、出勤與加班紀錄',['員工','出勤天數','遲到','加班時數'],roster.map(e=>{const at=attend(e.id);return[e.name,at.days,at.late,at.ot+'h'];}));
+  const trn=tbl('二、教育訓練時數',['員工',...store.courses.map(c=>c.name),'總時數'],roster.map(e=>{let h=0;const cs=store.courses.map(c=>{const s=trainStatus(e.id,c.id);if(s==='完成')h+=c.hours;return s;});return[e.name,...cs,h+'h'];}));
+  const ins=tbl('三、加退保級距',['員工','投保薪資','勞保自付','健保自付'],roster.map(e=>{const d=insDetail(e);return[e.name,d.br,d.laborSelf,d.healthSelf];}));
+  const pay=tbl('四、薪資清冊',['員工','應發','應扣','實發'],roster.map(e=>{const p=calcPay(e);return[e.name,nt(p.earn),nt(p.deduct),nt(p.net)];}));
+  const doc=`<!doctype html><meta charset=utf-8><title>勞動檢查報表包 · ${TENANTS[currentTenant].name}</title>
+  <style>body{font-family:"Microsoft JhengHei",sans-serif;padding:24px;color:#152019}h1{font-size:20px}h3{margin:20px 0 6px;color:#12673a;border-bottom:2px solid #12673a;padding-bottom:3px}table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}th,td{border:1px solid #ccc;padding:5px 7px;text-align:left}th{background:#e7f4ec}@media print{button{display:none}}</style>
+  <h1>勞動檢查報表包</h1><div>單位：${store.insCfg.unitName||TENANTS[currentTenant].name}　列印日：2026/07/07　在職 ${roster.length} 人</div>
+  <button onclick="print()" style="margin:12px 0;padding:8px 16px">🖨 列印 / 存 PDF</button>
+  ${att}${trn}${ins}${pay}
+  <p style="margin-top:20px;font-size:11px;color:#888">益循 HRM 系統產出 · 供勞動檢查參考</p>`;
+  const w=window.open('','_blank'); if(!w){ toast('請允許彈出視窗以列印'); return; } w.document.write(doc); w.document.close(); toast('已開啟勞檢報表包'); };
 
 // ---------- 小工具 ----------
 function page(tag,name,en,inner){ return `<h1 class="pt"><span class="tag" style="width:30px;height:30px;font-size:15px">${tag}</span>${name} <span class="en">${en}</span></h1>${inner}`; }
