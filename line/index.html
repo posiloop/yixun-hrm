@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>益循 HRM · LINE 官方帳號設定規劃</title>
+<meta name="description" content="益循 HRM 的 LINE 官方帳號（客服＋入口）建置規劃：圖文選單、自動回覆腳本、歡迎流程、開通清單。">
+<style>
+:root{
+  --brand:#1f8a4c;--brand-d:#12673a;--brand-l:#e7f4ec;--line-green:#06c755;
+  --ink:#152019;--muted:#5a6b61;--line:#e2ebe5;--ground:#ffffff;--ground-2:#f4f9f6;--card:#ffffff;--amber:#f2a900;
+  --sh:0 1px 2px rgba(20,50,35,.04),0 8px 24px rgba(20,50,35,.06);--sh-lg:0 18px 50px rgba(18,103,58,.15);
+  --r:16px;--maxw:1000px;--sans:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media(prefers-color-scheme:dark){:root{--ink:#e8f1eb;--muted:#9db0a5;--line:#25332c;--ground:#0d1411;--ground-2:#101a15;--card:#141e18;--brand-l:#16281e;--sh:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);--sh-lg:0 18px 50px rgba(0,0,0,.5)}}
+:root[data-theme="dark"]{--ink:#e8f1eb;--muted:#9db0a5;--line:#25332c;--ground:#0d1411;--ground-2:#101a15;--card:#141e18;--brand-l:#16281e;--sh:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);--sh-lg:0 18px 50px rgba(0,0,0,.5)}
+:root[data-theme="light"]{--ink:#152019;--muted:#5a6b61;--line:#e2ebe5;--ground:#ffffff;--ground-2:#f4f9f6;--card:#ffffff;--brand-l:#e7f4ec;--sh:0 1px 2px rgba(20,50,35,.04),0 8px 24px rgba(20,50,35,.06);--sh-lg:0 18px 50px rgba(18,103,58,.15)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden}
+body{font-family:var(--sans);color:var(--ink);background:var(--ground);line-height:1.65;font-size:16px;-webkit-font-smoothing:antialiased}
+a{color:var(--brand)}
+h1,h2,h3{margin:0;line-height:1.25;text-wrap:balance}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+.eyebrow{font-size:12.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--brand)}
+header.nav{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--ground) 90%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav-in{display:flex;align-items:center;justify-content:space-between;height:58px}
+.logo{display:flex;align-items:center;gap:9px;font-weight:900;font-size:17px}
+.logo .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--brand),var(--brand-d));display:grid;place-items:center;color:#fff;font-size:16px}
+.nav-links{display:flex;gap:18px;font-size:14px;font-weight:600}.nav-links a{color:var(--muted);text-decoration:none}
+.theme-btn{background:var(--card);border:1.5px solid var(--line);border-radius:9px;width:36px;height:36px;cursor:pointer;font-size:15px;color:var(--ink)}
+@media(max-width:680px){.nav-links{display:none}}
+.hero{padding:52px 0 30px;background:radial-gradient(800px 400px at 85% -20%,var(--brand-l),transparent 60%)}
+.hero h1{font-size:clamp(26px,4.4vw,40px);font-weight:900;margin-bottom:12px}
+.hero p{color:var(--muted);font-size:17px;max-width:34em}
+.badge{display:inline-block;background:var(--line-green);color:#fff;font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;margin-bottom:14px}
+section{padding:34px 0;border-top:1px solid var(--line)}
+.sec-t{font-size:13px;font-weight:800;color:var(--brand);letter-spacing:.06em}
+h2.big{font-size:clamp(21px,3vw,28px);font-weight:900;margin:6px 0 4px}
+.sub{color:var(--muted);margin-bottom:22px;font-size:15px}
+.two{display:grid;grid-template-columns:290px 1fr;gap:32px;align-items:start}
+@media(max-width:760px){.two{grid-template-columns:1fr;gap:24px}}
+/* rich menu mock */
+.rm{width:280px;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--sh-lg);margin:0 auto}
+.rm-top{background:linear-gradient(135deg,var(--brand),var(--brand-d));color:#fff;padding:12px 14px;font-size:13px;font-weight:700;display:flex;justify-content:space-between}
+.rm-grid{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;background:var(--line)}
+.rm-cell{background:var(--card);aspect-ratio:1.15;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:8px;text-align:center;transition:background .15s;cursor:default}
+.rm-cell:hover{background:var(--brand-l)}
+.rm-cell .i{font-size:24px}.rm-cell .t{font-size:12px;font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:14px}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh)}
+th,td{padding:11px 13px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--ground-2);font-size:12.5px;font-weight:800;color:var(--muted);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+code{font-family:var(--mono);font-size:12.5px;background:var(--brand-l);color:var(--brand-d);padding:1px 6px;border-radius:5px}
+.kw{font-family:var(--mono);font-size:12px;background:var(--ground-2);border:1px solid var(--line);padding:1px 6px;border-radius:5px;white-space:nowrap;display:inline-block;margin:1px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;box-shadow:var(--sh);margin-bottom:14px}
+.chatbox{background:var(--ground-2);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:9px}
+.bub{max-width:82%;padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.5}
+.bub.u{align-self:flex-end;background:var(--line-green);color:#fff;border-bottom-right-radius:4px}
+.bub.b{align-self:flex-start;background:var(--card);border:1px solid var(--line);border-bottom-left-radius:4px}
+ol.flow{counter-reset:s;list-style:none;padding:0;margin:0}
+ol.flow li{position:relative;padding:0 0 16px 40px;border-left:2px solid var(--line);margin-left:14px}
+ol.flow li:last-child{border-left-color:transparent}
+ol.flow li::before{counter-increment:s;content:counter(s);position:absolute;left:-15px;top:-2px;width:28px;height:28px;background:var(--brand);color:#fff;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px}
+ol.flow li b{display:block;margin-bottom:2px}
+ol.flow li span{color:var(--muted);font-size:14px}
+.check li{list-style:none;padding:9px 0 9px 30px;position:relative;border-bottom:1px solid var(--line);font-size:14.5px}
+.check{padding:0;margin:0}
+.check li::before{content:"☐";position:absolute;left:0;color:var(--brand);font-size:16px}
+.check li.need::before{content:"🔑"}
+.check li b{color:var(--ink)}
+.note{background:var(--brand-l);border-radius:10px;padding:12px 15px;font-size:13.5px;color:var(--brand-d);margin-top:14px}
+:root[data-theme="dark"] .note,@media(prefers-color-scheme:dark){.note{color:var(--ink)}}
+.pill{display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:20px;background:var(--amber);color:#3a2c00}
+footer{padding:36px 0;border-top:1px solid var(--line);color:var(--muted);font-size:13.5px}
+</style>
+</head>
+<body>
+<header class="nav"><div class="wrap nav-in">
+  <div class="logo"><span class="mark">益</span>益循 HRM · LINE 規劃</div>
+  <nav class="nav-links"><a href="#menu">圖文選單</a><a href="#reply">自動回覆</a><a href="#welcome">歡迎流程</a><a href="#setup">開通清單</a><a href="../sales/">銷售頁 ↗</a></nav>
+  <button class="theme-btn" onclick="toggleTheme()" id="tb">🌙</button>
+</div></header>
+
+<section class="hero" style="border:none"><div class="wrap">
+  <span class="badge">＋ LINE 官方帳號（客服 · 入口）</span>
+  <h1>LINE 官方帳號建置規劃書</h1>
+  <p>這份是給「負責開通 LINE 官方帳號的人」的施工藍圖：圖文選單怎麼配、關鍵字自動回覆腳本、新朋友歡迎流程、以及開通所需的帳號與金鑰清單。皆為規劃內容，<b>不含任何真實金鑰</b>。</p>
+</div></section>
+
+<!-- RICH MENU -->
+<section id="menu"><div class="wrap">
+  <div class="sec-t">① 圖文選單</div><h2 class="big">六宮格主選單 · 一鍵直達 LIFF</h2>
+  <p class="sub">員工加入官方帳號後，底部固定顯示六宮格；每格對應 HRM LIFF 的一個功能（深連結）。</p>
+  <div class="two">
+    <div class="rm" aria-hidden="true">
+      <div class="rm-top"><span>益循生活 人資</span><span>≡</span></div>
+      <div class="rm-grid">
+        <div class="rm-cell"><span class="i">📍</span><span class="t">打卡</span></div>
+        <div class="rm-cell"><span class="i">📅</span><span class="t">我的班表</span></div>
+        <div class="rm-cell"><span class="i">📝</span><span class="t">請假/加班</span></div>
+        <div class="rm-cell"><span class="i">💰</span><span class="t">薪資條</span></div>
+        <div class="rm-cell"><span class="i">📣</span><span class="t">公告</span></div>
+        <div class="rm-cell"><span class="i">💬</span><span class="t">客服</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="tbl-wrap"><table>
+        <tr><th>格位</th><th>動作類型</th><th>連結 / 行為</th></tr>
+        <tr><td>📍 打卡</td><td>LIFF URL</td><td><code>https://liff.line.me/{LIFF_ID}?go=punch</code></td></tr>
+        <tr><td>📅 我的班表</td><td>LIFF URL</td><td><code>…?go=C</code>（班表模組）</td></tr>
+        <tr><td>📝 請假/加班</td><td>LIFF URL</td><td><code>…?go=E</code>（申請簽核）</td></tr>
+        <tr><td>💰 薪資條</td><td>LIFF URL</td><td><code>…?go=K</code>（電子薪資條）</td></tr>
+        <tr><td>📣 公告</td><td>LIFF URL</td><td><code>…?go=N</code>（布告欄）</td></tr>
+        <tr><td>💬 客服</td><td>text / 切換選單</td><td>觸發關鍵字 <span class="kw">客服</span> → 進客服自動回覆</td></tr>
+      </table></div>
+      <div class="note">選單尺寸 2500×1686（大版）；每格熱區對應上表動作。多店可依租戶各自綁定不同 <code>{LIFF_ID}</code>，達成一店一選單。</div>
+    </div>
+  </div>
+</div></section>
+
+<!-- AUTO REPLY -->
+<section id="reply"><div class="wrap">
+  <div class="sec-t">② 關鍵字自動回覆</div><h2 class="big">常見問題自動回覆腳本</h2>
+  <p class="sub">收到訊息先比對關鍵字，命中就回罐頭訊息＋引導按鈕；無法解決一律可轉真人。</p>
+  <div class="tbl-wrap"><table>
+    <tr><th>關鍵字（含同義）</th><th>自動回覆</th><th>後續</th></tr>
+    <tr><td><span class="kw">打卡</span><span class="kw">忘記打卡</span><span class="kw">補卡</span></td><td>「忘記打卡免緊張！請點下方【請假/加班】→ 選『漏打卡補登』，填正確時間送出，主管核准即補上。」</td><td>附【補卡】按鈕 → LIFF <code>?go=E</code></td></tr>
+    <tr><td><span class="kw">請假</span><span class="kw">特休</span><span class="kw">加班</span></td><td>「請假／加班都在 LINE 申請：點【請假/加班】選類別、填時間送出，會即時通知主管簽核。特休餘額也看得到。」</td><td>【去申請】→ <code>?go=E</code></td></tr>
+    <tr><td><span class="kw">薪資</span><span class="kw">薪水</span><span class="kw">薪資條</span></td><td>「電子薪資條在【薪資條】專區，加密僅本人可查；發放時會主動推播通知你。」</td><td>【看薪資條】→ <code>?go=K</code></td></tr>
+    <tr><td><span class="kw">忘記密碼</span><span class="kw">登入</span><span class="kw">進不去</span></td><td>「系統以 LINE 身分自動登入，通常免密碼。若顯示未綁定，請聯繫店內人資協助綁定員編。」</td><td>【聯繫人資】→ 轉真人</td></tr>
+    <tr><td><span class="kw">班表</span><span class="kw">上班時間</span></td><td>「本週班表在【我的班表】，異動會即時推播；想換班請洽主管。」</td><td>【看班表】→ <code>?go=C</code></td></tr>
+    <tr><td><span class="kw">客服</span><span class="kw">真人</span><span class="kw">找人</span></td><td>「已為你轉接真人客服，服務時間 09:00–18:00，我們會盡快回覆 🙌」</td><td>標記待處理 → 通知管理員</td></tr>
+    <tr><td>（未命中）</td><td>「你好～我可以協助：打卡／請假／薪資／班表。輸入關鍵字，或點下方選單；需要真人請輸入『客服』。」</td><td>顯示選單提示</td></tr>
+  </table></div>
+  <div class="note">實作方式：LINE Messaging API webhook 收到 <code>message.text</code> → 關鍵字比對 → 回 <code>replyMessage</code>（文字＋quick reply/flex 按鈕）。轉真人＝將該對話標記並推播管理員（可接到 HRM 通知中心）。</div>
+</div></section>
+
+<!-- WELCOME -->
+<section id="welcome"><div class="wrap">
+  <div class="sec-t">③ 歡迎流程</div><h2 class="big">新朋友加入 → 綁定 → 上手</h2>
+  <div class="two">
+    <div class="chatbox">
+      <div class="bub b">👋 歡迎加入<b>益循生活</b>人資助手！<br>我能幫你打卡、看班表、請假、領薪資條，全在這條 LINE 裡完成。</div>
+      <div class="bub b">請先完成<b>身分綁定</b>，點下方按鈕輸入你的員編～</div>
+      <div class="bub u">綁定員編</div>
+      <div class="bub b">綁定成功 ✅ 王大明，台北忠孝店。<br>下方選單隨時可用，先試試【打卡】吧！</div>
+    </div>
+    <div>
+      <ol class="flow">
+        <li><b>加入好友即觸發</b><span>follow event → 推送歡迎訊息（greeting message）。</span></li>
+        <li><b>身分綁定</b><span>引導輸入員編 / 掃店內 QR Code，將 LINE userId 對應到 HRM 員工資料。</span></li>
+        <li><b>綁定確認</b><span>回讀姓名／分店確認無誤；未建檔者導向「聯繫人資」。</span></li>
+        <li><b>開通選單</b><span>綁定後顯示六宮格圖文選單，推播「第一次打卡教學」。</span></li>
+        <li><b>日常推播</b><span>班表異動、簽核結果、薪資條發放 → 由 HRM 通知中心推 LINE。</span></li>
+      </ol>
+    </div>
+  </div>
+</div></section>
+
+<!-- SETUP CHECKLIST -->
+<section id="setup"><div class="wrap">
+  <div class="sec-t">④ 開通清單</div><h2 class="big">需人工開通的項目 <span class="pill">待處理</span></h2>
+  <p class="sub">以下需真人到 LINE 後台操作 / 提供，工程端拿到即可串接（我不接觸真實金鑰）。</p>
+  <div class="two">
+    <div class="card">
+      <b style="color:var(--brand)">🔑 需要提供 / 開通</b>
+      <ul class="check" style="margin-top:8px">
+        <li class="need"><b>LINE 官方帳號</b>（LINE Official Account Manager 建立）</li>
+        <li class="need"><b>Messaging API channel</b>（LINE Developers Console）</li>
+        <li class="need"><b>Channel access token</b> ＋ Channel secret</li>
+        <li class="need"><b>LIFF app 建立</b>並取得 <code>{LIFF_ID}</code>（Endpoint 指向 HRM）</li>
+        <li class="need"><b>Webhook URL</b>（自動回覆後端，需一個可公開的 https 端點）</li>
+      </ul>
+    </div>
+    <div class="card">
+      <b style="color:var(--brand)">🛠️ 工程端可做（我來）</b>
+      <ul class="check" style="margin-top:8px">
+        <li>圖文選單版型與熱區設定檔（依上表）</li>
+        <li>關鍵字自動回覆邏輯（webhook handler）</li>
+        <li>歡迎流程與員編綁定串接 HRM</li>
+        <li>推播接到 HRM 通知中心（簽核/薪資/班表）</li>
+        <li>多租戶：一店一 <code>{LIFF_ID}</code> / 一選單</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note">下一步：等 LINE 官方帳號與 channel access token 開通，我就把 webhook 自動回覆與圖文選單設定檔實作出來並上線測試。</div>
+</div></section>
+
+<footer><div class="wrap">
+  益循 HRM · LINE 官方帳號規劃書（雛形）· 內容為規劃，無真實金鑰 ·
+  <a href="../?x=1">線上試玩 HRM</a> · <a href="../sales/">銷售頁</a>
+</div></footer>
+<script>
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);document.getElementById('tb').textContent=t==='dark'?'☀️':'🌙';try{localStorage.setItem('yx_theme',t)}catch(e){}}
+function toggleTheme(){var c=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');applyTheme(c==='dark'?'light':'dark');}
+try{var s=localStorage.getItem('yx_theme');if(s)applyTheme(s);else document.getElementById('tb').textContent=matchMedia('(prefers-color-scheme:dark)').matches?'☀️':'🌙';}catch(e){}
+</script>
+</body>
+</html>
