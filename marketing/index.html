@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>益循 HRM · FB / IG 社群與廣告內容包</title>
+<meta name="description" content="益循 HRM 的 FB／IG 官方經營與廣告投放內容包：品牌語調、貼文腳本、IG 九宮格、廣告活動企劃、主題標籤。">
+<style>
+:root{
+  --brand:#1f8a4c;--brand-d:#12673a;--brand-l:#e7f4ec;--fb:#1877f2;--ig:#e1306c;--amber:#f2a900;
+  --ink:#152019;--muted:#5a6b61;--line:#e2ebe5;--ground:#ffffff;--ground-2:#f4f9f6;--card:#ffffff;
+  --sh:0 1px 2px rgba(20,50,35,.04),0 8px 24px rgba(20,50,35,.06);--sh-lg:0 18px 50px rgba(18,103,58,.15);
+  --r:16px;--maxw:1040px;--sans:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:ui-monospace,Menlo,Consolas,monospace;
+}
+@media(prefers-color-scheme:dark){:root{--ink:#e8f1eb;--muted:#9db0a5;--line:#25332c;--ground:#0d1411;--ground-2:#101a15;--card:#141e18;--brand-l:#16281e;--sh:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);--sh-lg:0 18px 50px rgba(0,0,0,.5)}}
+:root[data-theme="dark"]{--ink:#e8f1eb;--muted:#9db0a5;--line:#25332c;--ground:#0d1411;--ground-2:#101a15;--card:#141e18;--brand-l:#16281e;--sh:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);--sh-lg:0 18px 50px rgba(0,0,0,.5)}
+:root[data-theme="light"]{--ink:#152019;--muted:#5a6b61;--line:#e2ebe5;--ground:#ffffff;--ground-2:#f4f9f6;--card:#ffffff;--brand-l:#e7f4ec;--sh:0 1px 2px rgba(20,50,35,.04),0 8px 24px rgba(20,50,35,.06);--sh-lg:0 18px 50px rgba(18,103,58,.15)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden}
+body{font-family:var(--sans);color:var(--ink);background:var(--ground);line-height:1.65;font-size:16px;-webkit-font-smoothing:antialiased}
+a{color:var(--brand)}
+h1,h2,h3{margin:0;line-height:1.25;text-wrap:balance}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+header.nav{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--ground) 90%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav-in{display:flex;align-items:center;justify-content:space-between;height:58px}
+.logo{display:flex;align-items:center;gap:9px;font-weight:900;font-size:16px}
+.logo .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--brand),var(--brand-d));display:grid;place-items:center;color:#fff;font-size:16px}
+.nav-links{display:flex;gap:16px;font-size:13.5px;font-weight:600}.nav-links a{color:var(--muted);text-decoration:none}
+.theme-btn{background:var(--card);border:1.5px solid var(--line);border-radius:9px;width:36px;height:36px;cursor:pointer;font-size:15px;color:var(--ink)}
+@media(max-width:720px){.nav-links{display:none}}
+.hero{padding:50px 0 26px;background:radial-gradient(760px 380px at 88% -20%,var(--brand-l),transparent 60%)}
+.hero h1{font-size:clamp(25px,4.2vw,38px);font-weight:900;margin-bottom:12px}
+.hero p{color:var(--muted);font-size:16.5px;max-width:33em}
+.badges{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.b{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;color:#fff}
+.b.fb{background:var(--fb)}.b.ig{background:linear-gradient(45deg,#f09433,#e1306c,#bc1888)}
+section{padding:34px 0;border-top:1px solid var(--line)}
+.sec-t{font-size:12.5px;font-weight:800;color:var(--brand);letter-spacing:.08em;text-transform:uppercase}
+h2.big{font-size:clamp(20px,3vw,27px);font-weight:900;margin:6px 0 4px}
+.sub{color:var(--muted);margin-bottom:20px;font-size:15px}
+.voice{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:640px){.voice{grid-template-columns:1fr}}
+.vc{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:16px 18px;box-shadow:var(--sh)}
+.vc h3{font-size:15px;margin-bottom:6px;color:var(--brand)}.vc p{margin:0;font-size:14px;color:var(--muted)}
+.posts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:720px){.posts{grid-template-columns:1fr}}
+.post{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:9px}
+.post .tag{align-self:flex-start;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px}
+.t-pain{background:#fdecea;color:#c0392b}.t-feat{background:var(--brand-l);color:var(--brand-d)}.t-social{background:#eaf2fd;color:#1d6fd0}.t-cta{background:#fff4e0;color:#a76a00}.t-edu{background:#efeaf7;color:#6b3fa0}
+:root[data-theme="dark"] .t-pain{background:#3a1f1c;color:#f0a89e}:root[data-theme="dark"] .t-social{background:#16273a;color:#8fbdf0}:root[data-theme="dark"] .t-cta{background:#3a2e14;color:#f0cd85}:root[data-theme="dark"] .t-edu{background:#251c33;color:#c3a8e6}
+.post h3{font-size:16px}
+.post .copy{font-size:14px;background:var(--ground-2);border-radius:10px;padding:11px 13px;white-space:pre-wrap;line-height:1.55}
+.post .img{font-size:13px;color:var(--muted)}.post .img b{color:var(--ink)}
+/* IG grid */
+.ig-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;max-width:340px;margin:0 auto;border-radius:12px;overflow:hidden;box-shadow:var(--sh-lg)}
+.ig-c{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px;font-size:11px;font-weight:700;color:#fff;line-height:1.3}
+.ig-brand{background:linear-gradient(135deg,var(--brand),var(--brand-d))}
+.ig-pain{background:#c0392b}.ig-feat{background:#2e7d5b}.ig-social{background:#1d6fd0}.ig-cta{background:var(--amber);color:#3a2c00}.ig-edu{background:#6b3fa0}
+.ig-c .e{font-size:22px;margin-bottom:3px}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:11px 13px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--ground-2);font-size:12px;font-weight:800;color:var(--muted);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+.hash{display:flex;flex-wrap:wrap;gap:7px}
+.hash span{font-family:var(--mono);font-size:12.5px;background:var(--brand-l);color:var(--brand-d);padding:4px 11px;border-radius:20px}
+.note{background:var(--brand-l);border-radius:10px;padding:12px 15px;font-size:13.5px;color:var(--brand-d);margin-top:16px}
+:root[data-theme="dark"] .note{color:var(--ink)}
+.pill{display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:20px;background:var(--amber);color:#3a2c00}
+footer{padding:34px 0;border-top:1px solid var(--line);color:var(--muted);font-size:13.5px}
+</style>
+</head>
+<body>
+<header class="nav"><div class="wrap nav-in">
+  <div class="logo"><span class="mark">益</span>益循 HRM · 社群內容包</div>
+  <nav class="nav-links"><a href="#voice">品牌語調</a><a href="#posts">貼文腳本</a><a href="#grid">IG 九宮格</a><a href="#ads">廣告企劃</a><a href="#tags">標籤</a><a href="../sales/">銷售頁 ↗</a></nav>
+  <button class="theme-btn" onclick="toggleTheme()" id="tb">🌙</button>
+</div></header>
+
+<section class="hero" style="border:none"><div class="wrap">
+  <div class="badges"><span class="b fb">f Facebook</span><span class="b ig">◎ Instagram</span></div>
+  <h1>FB / IG 社群與廣告內容包</h1>
+  <p>拿去就能開始經營：品牌語調、12 則貼文腳本（含文案＋圖像概念）、IG 九宮格版面、3 檔廣告活動企劃、主題標籤組。內容皆可直接改用，圖片為概念說明。</p>
+</div></section>
+
+<!-- VOICE -->
+<section id="voice"><div class="wrap">
+  <div class="sec-t">① 品牌語調 Brand Voice</div><h2 class="big">像一個懂餐飲的資深店長在跟你聊</h2>
+  <p class="sub">專業但不打官腔，站在老闆與員工兩邊的立場，講白話、給具體好處。</p>
+  <div class="voice">
+    <div class="vc"><h3>要</h3><p>白話、具體數字、餐飲場景（出餐尖峰、颱風代班、月底算薪）、強調「省時／合規／安心」、口語親切。</p></div>
+    <div class="vc"><h3>不要</h3><p>艱澀術語、恐嚇式行銷、冗長條文、空泛口號、過度賣弄科技感。</p></div>
+    <div class="vc"><h3>語氣範例</h3><p>「月底算薪水算到懷疑人生？勞健保級距讓系統幫你算，你只要按一下。」</p></div>
+    <div class="vc"><h3>視覺</h3><p>品牌葉綠 + 乾淨留白，手機截圖為主角，一圖一重點，避免資訊爆炸。</p></div>
+  </div>
+</div></section>
+
+<!-- POSTS -->
+<section id="posts"><div class="wrap">
+  <div class="sec-t">② 貼文腳本（12 則）</div><h2 class="big">痛點 · 功能 · 見證 · 教育 · CTA 混搭</h2>
+  <p class="sub">建議節奏：每週 2–3 則，痛點與功能交錯，穿插見證與教育，每 5 則安排 1 則 CTA。</p>
+  <div class="posts">
+    <div class="post"><span class="tag t-pain">痛點</span><h3>01 · LINE 群組排班之亂</h3><div class="copy">「這週誰早班？」訊息洗到天荒地老，換班還沒人認帳 😮‍💨
+班表用講的，月底就對不完。
+益循把班表搬進 LINE，誰上哪班一目瞭然，異動自動推播。</div><div class="img">🖼️ <b>圖像：</b>雜亂 LINE 群組截圖 → 對比整齊的班表卡。</div></div>
+    <div class="post"><span class="tag t-pain">痛點</span><h3>02 · 手算薪水勞健保</h3><div class="copy">月底最崩潰的一件事：算薪水。
+級距、加班倍率、補充保費…算到頭痛還怕算錯挨罰。
+益循自動幫你算，一鍵產生薪資條。</div><div class="img">🖼️ <b>圖像：</b>滿桌計算機與報表 → 手機一鍵出薪資條。</div></div>
+    <div class="post"><span class="tag t-feat">功能</span><h3>03 · 定位打卡防代打</h3><div class="copy">「幫我打一下卡」——這句話從此消失。
+益循用門市 GPS 圍籬打卡，超出範圍打不了，還能要求拍照。
+出勤真實，薪資才算得準。</div><div class="img">🖼️ <b>圖像：</b>手機地圖圍籬 + 打卡成功動畫。</div></div>
+    <div class="post"><span class="tag t-feat">功能</span><h3>04 · 一鍵薪資條</h3><div class="copy">打卡工時、加班、請假、墊付…全部自動串起來。
+勞保健保勞退補充保費依級距算好，薪資條加密推到員工 LINE。
+你只要確認，按一下發放。</div><div class="img">🖼️ <b>圖像：</b>薪資條手機畫面特寫（🔒 加密）。</div></div>
+    <div class="post"><span class="tag t-feat">功能</span><h3>05 · 多分店集中管理</h3><div class="copy">開第二家、第三家店，人事別再各管各的。
+益循每間店資料獨立、權限分級，總部一個帳號全都看得到。
+連鎖經營，管理不打結。</div><div class="img">🖼️ <b>圖像：</b>總部儀表板同時顯示多店卡片。</div></div>
+    <div class="post"><span class="tag t-social">見證</span><h3>06 · 店長的一天</h3><div class="copy">「以前每月花兩天算薪水，現在半小時搞定。」
+——台北某餐飲店長（示範）
+把時間還給現場，把算術交給系統。</div><div class="img">🖼️ <b>圖像：</b>店長人物照 + 引言卡（大字引號）。</div></div>
+    <div class="post"><span class="tag t-edu">教育</span><h3>07 · 特休到底怎麼算？</h3><div class="copy">滿 6 個月給 3 天、滿 1 年 7 天、滿 2 年 10 天…你算對了嗎？
+勞基法特休依年資級距，算錯可是會被開罰的。
+益循依到職日自動算，員工自己也查得到。</div><div class="img">🖼️ <b>圖像：</b>年資→特休天數階梯圖。</div></div>
+    <div class="post"><span class="tag t-feat">功能</span><h3>08 · 出勤異常自動提醒</h3><div class="copy">遲到、早退、忘打卡，不用人工一筆筆抓。
+益循依你設定的規則自動偵測，第一時間通知主管與當事人。
+該處理的，一個都不漏。</div><div class="img">🖼️ <b>圖像：</b>🔔 通知卡「王大明 遲到 12 分」。</div></div>
+    <div class="post"><span class="tag t-social">見證</span><h3>09 · 員工也說讚</h3><div class="copy">「請假不用再拜託人轉達，LINE 上點一點就送出，還看得到特休剩幾天。」
+好用的系統，老闆省心，員工也買單。</div><div class="img">🖼️ <b>圖像：</b>員工手機操作請假的第一人稱畫面。</div></div>
+    <div class="post"><span class="tag t-edu">教育</span><h3>10 · 颱風天怎麼排代班</h3><div class="copy">颱風假、臨時調度最考驗排班。
+益循班表即時改、即時推播，代班紀錄留痕，事後對帳不吵架。</div><div class="img">🖼️ <b>圖像：</b>颱風圖示 + 班表快速調整動作。</div></div>
+    <div class="post"><span class="tag t-cta">CTA</span><h3>11 · 免費試用 14 天</h3><div class="copy">心動不如手動。
+益循 HRM 免費試用 14 天，不需信用卡，滿意再談方案。
+👉 點連結，今天就讓管人變簡單。</div><div class="img">🖼️ <b>圖像：</b>手機 App 主畫面 + 大按鈕「免費試用」。</div></div>
+    <div class="post"><span class="tag t-cta">CTA</span><h3>12 · 加 LINE 諮詢</h3><div class="copy">還在觀望？直接問最快。
+加入官方 LINE，我們用你的實際店況幫你評估，30 分鐘帶你看完整套系統。</div><div class="img">🖼️ <b>圖像：</b>LINE 綠 + QR Code 佔位（開通後替換）。</div></div>
+  </div>
+</div></section>
+
+<!-- IG GRID -->
+<section id="grid"><div class="wrap">
+  <div class="sec-t">③ IG 九宮格版面</div><h2 class="big">前九宮格的第一印象</h2>
+  <p class="sub">新訪客點進主頁先看到這九格：品牌色塊定調，痛點勾住、功能證明、CTA 收單，視覺上綠色貫穿。</p>
+  <div class="ig-grid" aria-hidden="true">
+    <div class="ig-c ig-brand"><span class="e">益</span>一條 LINE 管好人資</div>
+    <div class="ig-c ig-pain"><span class="e">😵</span>排班之亂</div>
+    <div class="ig-c ig-feat"><span class="e">📍</span>定位打卡</div>
+    <div class="ig-c ig-feat"><span class="e">💰</span>一鍵薪資</div>
+    <div class="ig-c ig-cta"><span class="e">✨</span>免費試用</div>
+    <div class="ig-c ig-social"><span class="e">💬</span>店長見證</div>
+    <div class="ig-c ig-edu"><span class="e">📚</span>特休怎麼算</div>
+    <div class="ig-c ig-feat"><span class="e">🏪</span>多店管理</div>
+    <div class="ig-c ig-brand"><span class="e">👉</span>加 LINE 諮詢</div>
+  </div>
+  <div class="note">維持「品牌塊 → 痛點 → 功能 → CTA」的節奏；每滿一排補一格品牌色塊，讓主頁始終有綠色錨點。限時動態放幕後花絮與客戶問答。</div>
+</div></section>
+
+<!-- ADS -->
+<section id="ads"><div class="wrap">
+  <div class="sec-t">④ 廣告活動企劃（3 檔）</div><h2 class="big">從認知到成交的漏斗</h2>
+  <p class="sub">建議依序或並行投放；預算級距為相對建議，實際依成效調整。</p>
+  <div class="tbl-wrap"><table>
+    <tr><th>階段</th><th>目標受眾</th><th>主鉤（Hook）</th><th>CTA</th><th>版位</th><th>預算級距</th></tr>
+    <tr><td><b>A. 認知</b><br>觸及</td><td>台灣餐飲業主／店長，25–55，興趣：開店、餐飲經營、POS</td><td>「還在用 LINE 群組排班、紙本打卡？」</td><td>了解更多 → 銷售頁</td><td>FB/IG 動態、Reels</td><td>低（廣觸及、低單次成本）</td></tr>
+    <tr><td><b>B. 名單</b><br>轉換</td><td>互動過貼文 / 看過影片者（類似受眾擴充）</td><td>「14 天免費試用，不用信用卡」</td><td>立即試用 → 試用表單</td><td>FB/IG 動態、限動</td><td>中（衝表單填寫）</td></tr>
+    <tr><td><b>C. 再行銷</b><br>成交</td><td>來過銷售頁未完成試用者（像素再行銷）</td><td>「你的同行已經在用益循省下算薪時間」</td><td>立即開通 / 加 LINE 諮詢</td><td>FB/IG、Messenger</td><td>中（高意圖、催單）</td></tr>
+  </table></div>
+  <div class="note">素材建議：A 用「痛點對比」短影音；B 用「一鍵薪資條」功能特寫；C 用「見證＋數字」（省下 X 小時）。像素／轉換 API 需在網站與試用表單埋設（工程端可做，需 FB 商業管理帳號）。</div>
+</div></section>
+
+<!-- HASHTAGS -->
+<section id="tags"><div class="wrap">
+  <div class="sec-t">⑤ 主題標籤組</div><h2 class="big">Hashtag Set</h2>
+  <p class="sub">品牌固定標籤 + 情境標籤混用，每則貼文取 8–12 個。</p>
+  <div class="hash">
+    <span>#益循HRM</span><span>#餐飲人資</span><span>#排班系統</span><span>#打卡系統</span><span>#薪資計算</span><span>#勞健保</span><span>#餐飲業</span><span>#開店必備</span><span>#人事管理</span><span>#LINE人資</span><span>#連鎖店管理</span><span>#店長日常</span><span>#餐飲創業</span><span>#數位轉型</span><span>#省時省力</span>
+  </div>
+</div></section>
+
+<!-- MANUAL -->
+<section><div class="wrap">
+  <div class="sec-t">⑥ 需人工項目</div><h2 class="big">開跑前要備妥 <span class="pill">待處理</span></h2>
+  <div class="note" style="font-size:14px">
+    🔑 <b>需 建全 / 人工：</b>FB 粉絲專頁、IG 商業帳號、FB 商業管理帳號（Business Manager）、廣告付款方式（廣告需花錢）、實際店長見證授權（照片／引言）、QR Code（LINE 開通後）。<br>
+    🛠️ <b>工程端我可做：</b>像素／轉換 API 埋設、貼文與廣告文案／圖像概念（本頁）、著陸頁優化、UTM 追蹤連結。<br>
+    下一步：帳號開好後，我可把 12 則貼文排成月曆、把廣告文案做成可直接投放的版本。
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  益循 HRM · FB／IG 社群內容包（雛形）· 文案可直接改用、圖片為概念 ·
+  <a href="../?x=1">試玩 HRM</a> · <a href="../sales/">銷售頁</a> · <a href="../line/">LINE 規劃</a>
+</div></footer>
+<script>
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);document.getElementById('tb').textContent=t==='dark'?'☀️':'🌙';try{localStorage.setItem('yx_theme',t)}catch(e){}}
+function toggleTheme(){var c=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');applyTheme(c==='dark'?'light':'dark');}
+try{var s=localStorage.getItem('yx_theme');if(s)applyTheme(s);else document.getElementById('tb').textContent=matchMedia('(prefers-color-scheme:dark)').matches?'☀️':'🌙';}catch(e){}
+</script>
+</body>
+</html>
